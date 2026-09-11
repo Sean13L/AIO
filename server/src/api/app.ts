@@ -7,6 +7,7 @@ import { coursesRouter } from "./routes/courses.js";
 import { itemsRouter } from "./routes/items.js";
 import { lecturesRouter } from "./routes/lectures.js";
 import { calendarFeedRouter } from "./routes/calendarFeed.js";
+import { calendarSyncTargetsRouter } from "./routes/calendarSyncTargets.js";
 import { calendarPublicRouter } from "./routes/calendarPublic.js";
 
 export function createApp() {
@@ -27,7 +28,8 @@ export function createApp() {
     coursesRouter,
     itemsRouter,
     lecturesRouter,
-    calendarFeedRouter
+    calendarFeedRouter,
+    calendarSyncTargetsRouter
   );
 
   // Public — no resolveUser. The feed_token in the URL is the auth, since

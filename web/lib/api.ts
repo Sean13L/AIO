@@ -1,4 +1,12 @@
-import type { Course, Item, ItemStatus, ItemType, ItemWithCourse, Lecture } from "./types";
+import type {
+  CalendarSyncTarget,
+  Course,
+  Item,
+  ItemStatus,
+  ItemType,
+  ItemWithCourse,
+  Lecture,
+} from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
@@ -115,4 +123,18 @@ export const api = {
     }
     return res.json();
   },
+
+  listSyncTargets: (email: string) =>
+    request<CalendarSyncTarget[]>(email, "/api/calendar-feed/sync-targets"),
+
+  addSyncTarget: (email: string, label: string) =>
+    request<CalendarSyncTarget>(email, "/api/calendar-feed/sync-targets", {
+      method: "POST",
+      body: JSON.stringify({ label }),
+    }),
+
+  removeSyncTarget: (email: string, targetId: string) =>
+    request<void>(email, `/api/calendar-feed/sync-targets/${targetId}`, {
+      method: "DELETE",
+    }),
 };

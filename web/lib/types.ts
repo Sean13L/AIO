@@ -48,6 +48,16 @@ export interface ItemWithCourse extends Item {
   course_name: string;
 }
 
+export type SyncTargetType = "ics_subscriber" | "google_oauth";
+
+export interface CalendarSyncTarget {
+  id: string;
+  feed_id: string;
+  target_type: SyncTargetType;
+  label: string | null;
+  created_at: string;
+}
+
 export type PreviewStatus = "not_generated" | "generated" | "viewed";
 
 export interface Lecture {
