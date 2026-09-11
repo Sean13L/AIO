@@ -5,18 +5,7 @@ import { use, useEffect, useState } from "react";
 import { useCurrentUser } from "@/lib/CurrentUserContext";
 import { api, type ItemUpdateInput } from "@/lib/api";
 import { ITEM_STATUSES, ITEM_TYPES, type Course, type Item, type ItemStatus, type ItemType } from "@/lib/types";
-
-function splitDueAt(dueAt: string, isDatetime: boolean) {
-  const d = new Date(dueAt);
-  const due_date = d.toISOString().slice(0, 10);
-  const due_time = isDatetime ? d.toISOString().slice(11, 16) : "";
-  return { due_date, due_time };
-}
-
-function formatDue(item: Item) {
-  const { due_date, due_time } = splitDueAt(item.due_at, item.is_datetime);
-  return item.is_datetime ? `${due_date} at ${due_time}` : `${due_date} (all day)`;
-}
+import { formatDue, splitDueAt } from "@/lib/dates";
 
 interface ItemFormState {
   name: string;

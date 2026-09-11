@@ -24,10 +24,31 @@ a {
   gap: 0.5rem;
 }
 
+.brand-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
 .brand {
   font-weight: 600;
   text-decoration: none;
   color: #1a1a1a;
+}
+
+.nav-links {
+  display: flex;
+  gap: 1rem;
+}
+
+.nav-links a {
+  color: #555;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.nav-links a:hover {
+  color: #2454ff;
 }
 
 .user-form {
@@ -152,6 +173,56 @@ form.inline label {
 .error {
   color: #c0392b;
   font-size: 0.9rem;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.board-column {
+  background: #f0f0f0;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+  padding: 0.75rem;
+  min-height: 200px;
+}
+
+.board-column.drag-over {
+  background: #e6ecff;
+  border-color: #2454ff;
+}
+
+.board-column h2 {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  color: #666;
+  margin: 0 0 0.75rem;
+}
+
+.board-card {
+  background: #fff;
+  border: 1px solid #e2e2e2;
+  border-radius: 6px;
+  padding: 0.6rem 0.7rem;
+  margin-bottom: 0.6rem;
+  cursor: grab;
+}
+
+.board-card select {
+  margin-top: 0.4rem;
+  width: 100%;
+}
+
+.board-card-course {
+  font-size: 0.75rem;
+}
+
+.board-card-name {
+  font-weight: 500;
+  margin: 0.15rem 0;
 }
 
 .badge {

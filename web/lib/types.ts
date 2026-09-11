@@ -42,3 +42,8 @@ export interface Item {
   source: "extracted" | "manual";
   created_at: string;
 }
+
+export interface ItemWithCourse extends Item {
+  course_code: string;
+  course_name: string;
+}

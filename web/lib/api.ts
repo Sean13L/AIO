@@ -1,4 +1,4 @@
-import type { Course, Item, ItemStatus, ItemType } from "./types";
+import type { Course, Item, ItemStatus, ItemType, ItemWithCourse } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
@@ -66,7 +66,7 @@ export const api = {
   listItems: (email: string, courseId: string) =>
     request<Item[]>(email, `/api/courses/${courseId}/items`),
 
-  listAllItems: (email: string) => request<Item[]>(email, "/api/items"),
+  listAllItems: (email: string) => request<ItemWithCourse[]>(email, "/api/items"),
 
   createItem: (email: string, courseId: string, input: ItemCreateInput) =>
     request<Item>(email, `/api/courses/${courseId}/items`, {

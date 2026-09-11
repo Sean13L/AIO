@@ -2,7 +2,7 @@ import { Router } from "express";
 import { pool } from "../../db/client.js";
 import {
   deleteItemForUser,
-  listItemsByUser,
+  listItemsWithCourseForUser,
   updateItemForUser,
   type ItemUpdate,
 } from "../../db/repositories/items.js";
@@ -11,11 +11,12 @@ import { itemUpdateSchema } from "../validation.js";
 
 export const itemsRouter = Router();
 
-// All items across every course for the current user — the "by due date"
-// view referenced in CLAUDE.md's organizational database section.
+// All items across every course for the current user, with course info
+// attached — backs the "by due date" (timeline) and "by status" (kanban)
+// views from CLAUDE.md's organizational database section.
 itemsRouter.get("/items", async (req, res, next) => {
   try {
-    const items = await listItemsByUser(pool, req.userId!);
+    const items = await listItemsWithCourseForUser(pool, req.userId!);
     res.json(items);
   } catch (err) {
     next(err);

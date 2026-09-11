@@ -14,9 +14,16 @@ export function TopBar() {
 
   return (
     <header className="topbar">
-      <Link href="/" className="brand">
-        AI Syllabus Assistant
-      </Link>
+      <div className="brand-nav">
+        <Link href="/" className="brand">
+          AI Syllabus Assistant
+        </Link>
+        <nav className="nav-links">
+          <Link href="/">Courses</Link>
+          <Link href="/timeline">Timeline</Link>
+          <Link href="/board">Board</Link>
+        </nav>
+      </div>
       {ready && (
         <form
           className="user-form"
