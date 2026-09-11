@@ -31,6 +31,28 @@ export async function listLecturesByCourse(
   return result.rows;
 }
 
+export interface LectureWithCourse extends Lecture {
+  course_code: string;
+  course_name: string;
+}
+
+// For the calendar feed: lectures need their course code/name for the event
+// summary without a second round trip per course.
+export async function listLecturesWithCourseForUser(
+  db: Pool | PoolClient,
+  userId: string
+): Promise<LectureWithCourse[]> {
+  const result = await db.query<LectureWithCourse>(
+    `SELECT lectures.*, courses.course_code, courses.course_name
+     FROM lectures
+     JOIN courses ON courses.id = lectures.course_id
+     WHERE courses.user_id = $1
+     ORDER BY lectures.scheduled_at`,
+    [userId]
+  );
+  return result.rows;
+}
+
 export async function createLecture(
   db: Pool | PoolClient,
   courseId: string,

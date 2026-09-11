@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useCurrentUser } from "@/lib/CurrentUserContext";
 import { api } from "@/lib/api";
 import type { Course } from "@/lib/types";
+import { CalendarFeedCard } from "@/components/CalendarFeedCard";
 
 export default function CoursesPage() {
   const { email, ready } = useCurrentUser();
@@ -77,6 +78,8 @@ export default function CoursesPage() {
     <div>
       <h1>Courses</h1>
       {error && <p className="error">{error}</p>}
+
+      <CalendarFeedCard />
 
       <div className="card">
         <h2>Add a course</h2>

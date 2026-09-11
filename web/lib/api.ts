@@ -82,4 +82,7 @@ export const api = {
 
   deleteItem: (email: string, itemId: string) =>
     request<void>(email, `/api/items/${itemId}`, { method: "DELETE" }),
+
+  getCalendarFeed: (email: string) =>
+    request<{ url: string }>(email, "/api/calendar-feed"),
 };

@@ -72,6 +72,28 @@ export async function listItemsByUser(
   return result.rows;
 }
 
+export interface ItemWithCourse extends Item {
+  course_code: string;
+  course_name: string;
+}
+
+// For the calendar feed: items need their course code/name for the event
+// summary without a second round trip per course.
+export async function listItemsWithCourseForUser(
+  db: Pool | PoolClient,
+  userId: string
+): Promise<ItemWithCourse[]> {
+  const result = await db.query<ItemWithCourse>(
+    `SELECT items.*, courses.course_code, courses.course_name
+     FROM items
+     JOIN courses ON courses.id = items.course_id
+     WHERE courses.user_id = $1
+     ORDER BY items.due_at`,
+    [userId]
+  );
+  return result.rows;
+}
+
 export async function getItemForUser(
   db: Pool | PoolClient,
   userId: string,
