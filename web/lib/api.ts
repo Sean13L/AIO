@@ -1,4 +1,4 @@
-import type { Course, Item, ItemStatus, ItemType, ItemWithCourse } from "./types";
+import type { Course, Item, ItemStatus, ItemType, ItemWithCourse, Lecture } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
@@ -85,4 +85,34 @@ export const api = {
 
   getCalendarFeed: (email: string) =>
     request<{ url: string }>(email, "/api/calendar-feed"),
+
+  listLectures: (email: string, courseId: string) =>
+    request<Lecture[]>(email, `/api/courses/${courseId}/lectures`),
+
+  getLecture: (email: string, lectureId: string) =>
+    request<Lecture>(email, `/api/lectures/${lectureId}`),
+
+  generateLecturePreview: (email: string, lectureId: string) =>
+    request<Lecture>(email, `/api/lectures/${lectureId}/generate-preview`, {
+      method: "POST",
+    }),
+
+  // Bypasses the shared `request()` helper: file uploads need the browser
+  // to set its own multipart Content-Type boundary, not our JSON default.
+  uploadLectureSlides: async (email: string, lectureId: string, file: File): Promise<Lecture> => {
+    const formData = new FormData();
+    formData.append("slides", file);
+
+    const res = await fetch(`${API_URL}/api/lectures/${lectureId}/slides`, {
+      method: "POST",
+      headers: { "X-User-Email": email },
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(typeof body.error === "string" ? body.error : "Slide upload failed");
+    }
+    return res.json();
+  },
 };

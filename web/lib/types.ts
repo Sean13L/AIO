@@ -47,3 +47,17 @@ export interface ItemWithCourse extends Item {
   course_code: string;
   course_name: string;
 }
+
+export type PreviewStatus = "not_generated" | "generated" | "viewed";
+
+export interface Lecture {
+  id: string;
+  course_id: string;
+  scheduled_at: string;
+  week_number: number | null;
+  topics: string | null;
+  slides_url: string | null;
+  preview_status: PreviewStatus;
+  preview_content: string | null;
+  created_at: string;
+}

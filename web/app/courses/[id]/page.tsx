@@ -4,8 +4,22 @@ import Link from "next/link";
 import { use, useEffect, useState } from "react";
 import { useCurrentUser } from "@/lib/CurrentUserContext";
 import { api, type ItemUpdateInput } from "@/lib/api";
-import { ITEM_STATUSES, ITEM_TYPES, type Course, type Item, type ItemStatus, type ItemType } from "@/lib/types";
+import {
+  ITEM_STATUSES,
+  ITEM_TYPES,
+  type Course,
+  type Item,
+  type ItemStatus,
+  type ItemType,
+  type Lecture,
+} from "@/lib/types";
 import { formatDue, splitDueAt } from "@/lib/dates";
+
+const PREVIEW_STATUS_LABELS: Record<Lecture["preview_status"], string> = {
+  not_generated: "Not generated",
+  generated: "Ready to view",
+  viewed: "Viewed",
+};
 
 interface ItemFormState {
   name: string;
@@ -32,6 +46,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
   const { email, ready } = useCurrentUser();
   const [course, setCourse] = useState<Course | null>(null);
   const [items, setItems] = useState<Item[] | null>(null);
+  const [lectures, setLectures] = useState<Lecture[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [form, setForm] = useState<ItemFormState>(emptyForm);
@@ -43,12 +58,14 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
     if (!email) return;
     try {
       setError(null);
-      const [courseData, itemsData] = await Promise.all([
+      const [courseData, itemsData, lecturesData] = await Promise.all([
         api.getCourse(email, courseId),
         api.listItems(email, courseId),
+        api.listLectures(email, courseId),
       ]);
       setCourse(courseData);
       setItems(itemsData);
+      setLectures(lecturesData);
     } catch (err) {
       setError((err as Error).message);
     }
@@ -346,6 +363,41 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
                 </tr>
               )
             )}
+          </tbody>
+        </table>
+      )}
+
+      <h2 style={{ marginTop: "2rem" }}>Lecture schedule</h2>
+      {lectures === null ? (
+        <p className="muted">Loading…</p>
+      ) : lectures.length === 0 ? (
+        <p className="muted">
+          No lectures yet — these come from the syllabus&apos;s week-by-week schedule once
+          imported (see <code>npm run ingest</code> in <code>server/</code>).
+        </p>
+      ) : (
+        <table>
+          <thead>
+            <tr>
+              <th>Week</th>
+              <th>When</th>
+              <th>Topics</th>
+              <th>Preview</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {lectures.map((lecture) => (
+              <tr key={lecture.id}>
+                <td>{lecture.week_number ?? "—"}</td>
+                <td>{formatDue({ due_at: lecture.scheduled_at, is_datetime: true })}</td>
+                <td>{lecture.topics ?? "—"}</td>
+                <td>{PREVIEW_STATUS_LABELS[lecture.preview_status]}</td>
+                <td>
+                  <Link href={`/courses/${courseId}/lectures/${lecture.id}`}>Open</Link>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       )}

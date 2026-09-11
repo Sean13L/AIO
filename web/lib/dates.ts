@@ -1,5 +1,3 @@
-import type { Item } from "./types";
-
 export function splitDueAt(dueAt: string, isDatetime: boolean) {
   const d = new Date(dueAt);
   const due_date = d.toISOString().slice(0, 10);
@@ -7,9 +5,9 @@ export function splitDueAt(dueAt: string, isDatetime: boolean) {
   return { due_date, due_time };
 }
 
-export function formatDue(item: Item): string {
-  const { due_date, due_time } = splitDueAt(item.due_at, item.is_datetime);
-  return item.is_datetime ? `${due_date} at ${due_time}` : `${due_date} (all day)`;
+export function formatDue(when: { due_at: string; is_datetime: boolean }): string {
+  const { due_date, due_time } = splitDueAt(when.due_at, when.is_datetime);
+  return when.is_datetime ? `${due_date} at ${due_time}` : `${due_date} (all day)`;
 }
 
 const MONTH_LABELS = [

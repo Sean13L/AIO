@@ -23,5 +23,9 @@ export async function extractRawText(input: SyllabusInput): Promise<string> {
     return result.value;
   }
 
-  throw new Error(`Unsupported syllabus file type: ${ext || "(no extension)"}`);
+  if (ext === ".txt" || ext === ".md") {
+    return input.buffer.toString("utf8");
+  }
+
+  throw new Error(`Unsupported file type: ${ext || "(no extension)"}`);
 }

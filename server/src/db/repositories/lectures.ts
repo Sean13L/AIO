@@ -65,3 +65,76 @@ export async function createLecture(
   );
   return result.rows[0];
 }
+
+export async function getLectureForUser(
+  db: Pool | PoolClient,
+  userId: string,
+  lectureId: string
+): Promise<Lecture | null> {
+  const result = await db.query<Lecture>(
+    `SELECT lectures.* FROM lectures
+     JOIN courses ON courses.id = lectures.course_id
+     WHERE lectures.id = $1 AND courses.user_id = $2`,
+    [lectureId, userId]
+  );
+  return result.rows[0] ?? null;
+}
+
+export async function setLectureSlidesUrl(
+  db: Pool | PoolClient,
+  lectureId: string,
+  slidesUrl: string
+): Promise<Lecture> {
+  const result = await db.query<Lecture>(
+    "UPDATE lectures SET slides_url = $2 WHERE id = $1 RETURNING *",
+    [lectureId, slidesUrl]
+  );
+  return result.rows[0];
+}
+
+export async function setLecturePreview(
+  db: Pool | PoolClient,
+  lectureId: string,
+  previewContent: string
+): Promise<Lecture> {
+  const result = await db.query<Lecture>(
+    `UPDATE lectures SET preview_content = $2, preview_status = 'generated'
+     WHERE id = $1 RETURNING *`,
+    [lectureId, previewContent]
+  );
+  return result.rows[0];
+}
+
+// Marks a preview "viewed" the first time the student actually opens the
+// lecture page — only transitions out of 'generated', never overwrites
+// 'not_generated' or a later re-view.
+export async function markLecturePreviewViewed(
+  db: Pool | PoolClient,
+  lectureId: string
+): Promise<void> {
+  await db.query(
+    "UPDATE lectures SET preview_status = 'viewed' WHERE id = $1 AND preview_status = 'generated'",
+    [lectureId]
+  );
+}
+
+export interface LectureNeedingPreview extends Lecture {
+  course_code: string;
+}
+
+// Global sweep (not scoped to one user) for the scheduled preview-generation
+// job — see server/src/scheduler.ts.
+export async function listLecturesNeedingPreview(
+  db: Pool | PoolClient,
+  leadHours: number
+): Promise<LectureNeedingPreview[]> {
+  const result = await db.query<LectureNeedingPreview>(
+    `SELECT lectures.*, courses.course_code
+     FROM lectures
+     JOIN courses ON courses.id = lectures.course_id
+     WHERE lectures.preview_status = 'not_generated'
+       AND lectures.scheduled_at BETWEEN now() AND now() + ($1 * interval '1 hour')`,
+    [leadHours]
+  );
+  return result.rows;
+}
