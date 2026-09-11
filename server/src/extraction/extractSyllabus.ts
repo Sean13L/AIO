@@ -3,6 +3,7 @@ import {
   syllabusExtractionSchema,
   type SyllabusExtraction,
 } from "./schema.js";
+import { mockExtractSyllabus } from "./mockExtractSyllabus.js";
 
 const TOOL_NAME = "record_syllabus_extraction";
 
@@ -144,7 +145,13 @@ export async function extractSyllabus({
   model = process.env.CLAUDE_MODEL ?? "claude-sonnet-5",
 }: ExtractSyllabusOptions): Promise<SyllabusExtraction> {
   if (!apiKey) {
-    throw new Error("ANTHROPIC_API_KEY is not set");
+    console.warn(
+      "[extractSyllabus] ANTHROPIC_API_KEY is not set — falling back to the " +
+        "local heuristic mock extractor (mockExtractSyllabus.ts). This is a " +
+        "workaround for running the pipeline without an API key; results " +
+        "will be far less accurate than real Claude extraction."
+    );
+    return mockExtractSyllabus(syllabusText);
   }
 
   const client = new Anthropic({ apiKey });
