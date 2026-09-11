@@ -1,0 +1,44 @@
+export type ItemType =
+  | "assignment"
+  | "quiz"
+  | "midterm"
+  | "final_exam"
+  | "project"
+  | "peer_evaluation"
+  | "other";
+
+export type ItemStatus = "not_started" | "in_progress" | "done";
+
+export const ITEM_TYPES: ItemType[] = [
+  "assignment",
+  "quiz",
+  "midterm",
+  "final_exam",
+  "project",
+  "peer_evaluation",
+  "other",
+];
+
+export const ITEM_STATUSES: ItemStatus[] = ["not_started", "in_progress", "done"];
+
+export interface Course {
+  id: string;
+  course_code: string;
+  course_name: string;
+  semester: string | null;
+  created_at: string;
+}
+
+export interface Item {
+  id: string;
+  course_id: string;
+  name: string;
+  type: ItemType;
+  due_at: string;
+  is_datetime: boolean;
+  weight: string | null;
+  notes: string | null;
+  status: ItemStatus;
+  source: "extracted" | "manual";
+  created_at: string;
+}

@@ -1,0 +1,164 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: #1a1a1a;
+  background: #fafafa;
+}
+
+a {
+  color: #2454ff;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.5rem;
+  background: #fff;
+  border-bottom: 1px solid #e2e2e2;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.brand {
+  font-weight: 600;
+  text-decoration: none;
+  color: #1a1a1a;
+}
+
+.user-form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.user-form input {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  min-width: 220px;
+}
+
+.current-user {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+button {
+  cursor: pointer;
+  border: 1px solid #2454ff;
+  background: #2454ff;
+  color: #fff;
+  border-radius: 4px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+}
+
+button.secondary {
+  background: #fff;
+  color: #2454ff;
+}
+
+button.danger {
+  background: #fff;
+  color: #c0392b;
+  border-color: #c0392b;
+}
+
+input,
+select,
+textarea {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font: inherit;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid #eee;
+  vertical-align: top;
+}
+
+th {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: #777;
+}
+
+form.inline {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: end;
+  margin: 1rem 0;
+}
+
+form.inline label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.8rem;
+  color: #555;
+  gap: 0.2rem;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.course-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.course-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.muted {
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.error {
+  color: #c0392b;
+  font-size: 0.9rem;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  background: #eee;
+  color: #555;
+}
