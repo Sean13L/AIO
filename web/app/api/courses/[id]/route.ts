@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/session";
+import { deleteFileFromWorker, filenameFromWorkerUrl } from "@/lib/workerClient";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const userId = await getCurrentUserId();
@@ -17,9 +18,30 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   if (!userId) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   const { id } = await params;
 
-  const result = await prisma.courses.deleteMany({ where: { id, user_id: userId } });
-  if (result.count === 0) {
-    return NextResponse.json({ error: "Course not found" }, { status: 404 });
-  }
+  const course = await prisma.courses.findFirst({
+    where: { id, user_id: userId },
+    include: { lectures: true, syllabi: true },
+  });
+  if (!course) return NextResponse.json({ error: "Course not found" }, { status: 404 });
+
+  // Prisma's cascade delete below only removes the database rows — the
+  // worker's own files (lecture slides, archived syllabus uploads) have no
+  // foreign key tying their lifetime to these rows, so they'd otherwise be
+  // left behind as orphaned disk space with nothing pointing at them.
+  // Best-effort and run before the DB delete so a worker hiccup still lets
+  // the user delete the course; a file that fails to clean up just stays
+  // orphaned, same as before this existed.
+  await Promise.all([
+    ...course.lectures
+      .map((lecture) => filenameFromWorkerUrl(lecture.slides_url))
+      .filter((filename): filename is string => filename !== null)
+      .map((filename) => deleteFileFromWorker("lectures", filename)),
+    ...course.syllabi
+      .map((syllabus) => filenameFromWorkerUrl(syllabus.file_url))
+      .filter((filename): filename is string => filename !== null)
+      .map((filename) => deleteFileFromWorker("syllabi", filename)),
+  ]);
+
+  await prisma.courses.delete({ where: { id: course.id } });
   return new NextResponse(null, { status: 204 });
 }

@@ -64,6 +64,23 @@ filesRouter.get("/files/:namespace/:filename", (req, res) => {
   res.sendFile(target);
 });
 
+// Internal — lets web/ clean up a file when its owning record (course,
+// lecture) is deleted, so uploads don't pile up as orphaned disk space with
+// nothing left in the database pointing at them. Idempotent: deleting an
+// already-gone file is not an error, since the caller's own delete may be
+// retried or the file may already be gone.
+filesRouter.delete("/files/:namespace/:filename", requireWorkerApiKey, (req, res) => {
+  const { namespace, filename } = req.params;
+  if (!isNamespace(namespace) || !isSafeFilename(filename)) {
+    res.status(400).json({ error: "Invalid request" });
+    return;
+  }
+
+  const target = filePath(namespace, filename);
+  fs.rmSync(target, { force: true });
+  res.status(204).end();
+});
+
 // Internal — lets the (serverless) web app get a slide file's extracted
 // text synchronously, without needing filesystem access itself.
 filesRouter.get(

@@ -40,6 +40,25 @@ export async function uploadFileToWorker(
   return res.json();
 }
 
+// Best-effort: callers should not let a failed cleanup block the database
+// operation it's attached to (e.g. deleting a course whose slide file is
+// already gone, or the worker being briefly unreachable). Errors are
+// swallowed and logged, not thrown.
+export async function deleteFileFromWorker(namespace: Namespace, filename: string): Promise<void> {
+  try {
+    const { url, apiKey } = requireWorkerConfig();
+    const res = await fetch(`${url}/files/${namespace}/${filename}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    if (!res.ok) {
+      console.error(`[deleteFileFromWorker] ${namespace}/${filename} -> ${res.status}`);
+    }
+  } catch (err) {
+    console.error(`[deleteFileFromWorker] ${namespace}/${filename} failed:`, err);
+  }
+}
+
 export async function getFileTextFromWorker(
   namespace: Namespace,
   filename: string
@@ -61,7 +80,10 @@ export async function getFileTextFromWorker(
 
 // The web app never has local disk access to the file — the filename
 // encoded in slides_url (a worker-served URL) is the only handle it keeps.
+// Returns null for anything that isn't a real worker URL, notably the
+// "pasted-text:<timestamp>" placeholder syllabi.file_url gets for
+// paste-in-text uploads, which were never a file on the worker at all.
 export function filenameFromWorkerUrl(fileUrl: string | null): string | null {
-  if (!fileUrl) return null;
+  if (!fileUrl || !fileUrl.startsWith("http")) return null;
   return fileUrl.split("/").pop() ?? null;
 }
