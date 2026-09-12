@@ -34,6 +34,27 @@ WORKER_API_KEY=<same key as web/.env.local> docker compose up --build
 Postgres + this worker; `web/` still runs separately (`npm run dev` or a
 serverless deploy) pointed at `http://localhost:4100`.
 
+**First run only**: the containerized Postgres starts empty — push the
+schema to it once the containers are up:
+
+```bash
+docker compose exec worker npx prisma db push
+```
+
+(Real deployments should use `prisma migrate deploy` with committed
+migrations instead — see the migration-history note in the repo's
+top-level notes. `db push` is fine for getting this running locally.)
+
+If you already have a *separate* native/local Postgres also listening on
+5432, note that `docker-compose.yml`'s `postgres` service will silently
+lose the port-5432 host-binding race to it — Docker Desktop on Windows
+doesn't always surface this as an error. `docker compose logs worker`
+will show `P2021: table does not exist` if the worker ends up talking to
+the wrong (unmigrated) database; `docker compose exec worker env | grep
+DATABASE_URL` confirms which one it's actually using internally
+(`postgres:5432`, the container network hostname, regardless of what's
+happening on the host's port 5432).
+
 ## API
 
 - `POST /files/:namespace` (`lectures` | `syllabi`, bearer auth) — multipart

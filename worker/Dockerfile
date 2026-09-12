@@ -6,6 +6,10 @@
 # bottleneck, not before.
 FROM node:22-slim AS build
 WORKDIR /app
+# node:*-slim doesn't include OpenSSL, which Prisma's engine needs to
+# detect the right binary target for — without it, it silently falls back
+# to a guessed version and warns on every startup.
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 COPY package*.json ./
 RUN npm ci
 COPY prisma ./prisma
@@ -16,6 +20,7 @@ RUN npx tsc -p tsconfig.json
 
 FROM node:22-slim AS runtime
 WORKDIR /app
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
