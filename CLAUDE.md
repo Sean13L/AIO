@@ -71,21 +71,22 @@ The app's data model should mirror the structure already validated in Notion:
   - The lecture also appears in the course's schedule listing (in the Notion-style organizational view), also linked to the same page.
   - Needs a trigger mechanism — e.g., a scheduled job that checks "what's the next lecture for each course" and generates/refreshes the preview a set amount of time beforehand.
 
-## Suggested Tech Stack (adjust as needed)
-- **Frontend:** React/Next.js
-- **Backend:** Node or Python (FastAPI)
-- **Database:** Postgres — relational fits courses → items → grading weights well
-- **AI:** Claude API for syllabus extraction (structured/JSON output) and lecture-preview generation
-- **Calendar sync:** Google Calendar API (OAuth 2.0); Microsoft Graph API if Outlook is in scope
+## Implemented Stack
+Hybrid architecture, split so the parts that can't run serverless don't have to:
+- **`web/`** — Next.js (App Router) + Tailwind, deployed stateless/serverless. Next.js API routes (no separate Express layer), Prisma against Postgres, NextAuth.js (Google OAuth + magic links via a direct Resend API call — not v5-beta, not nodemailer). Calls Claude directly for syllabus extraction.
+- **`worker/`** — Express container, always-on. Owns the two things a serverless deploy can't: persistent file storage for uploaded slides/syllabi (`STORAGE_ROOT` volume) and the lecture-preview scheduler (polling loop, calls Claude to generate previews ahead of the lecture). `web/` talks to it over HTTP with a bearer `WORKER_API_KEY`.
+- **Database:** Postgres, one shared instance in practice. `worker/prisma/schema.prisma` is a hand-kept duplicate of `web/prisma/schema.prisma` (Docker build contexts can't reach outside their own directory) — see `worker/README.md`'s "Known limitation" for the drift risk.
+- **Calendar sync:** `.ics` subscription feed, shipped (per-user token URL, multiple sync-target labels supported). Direct Google Calendar OAuth push is *not yet built* — schema has a slot for it (`sync_target_type`, `google_oauth_token`) but the route only accepts `ics_subscriber` today.
+- **CI:** GitHub Actions (`.github/workflows/ci.yml`) — typecheck/test/build for both `web/` and `worker/` against a real Postgres service container.
 
-## Open Questions to Resolve
-1. Whether to keep Deadlines and Assignments as one consolidated table (recommended above) or preserve the two-database split from the current Notion setup.
-2. Multi-user calendar sync mechanism: simplest is multiple `.ics` feed recipients (anyone with the link can subscribe, read-only); more involved is letting a user connect and push to multiple external calendar accounts. Worth deciding before building the sync layer.
+## Open Questions — resolved
+1. Deadlines/Assignments: consolidated into one `items` table with a `source` field (auto-extracted vs. manual), as recommended — not the two-database Notion split.
+2. Multi-user calendar sync: went with multiple `.ics` feed recipients (read-only, link-based) as the simple first cut. Direct OAuth push per recipient is still open — see Build Order step 6 below.
 
 ## Build Order (suggested)
-1. Syllabus upload + AI extraction → structured course record (deadlines *and* the lecture schedule)
-2. Database schema + basic CRUD UI for assignments/quizzes/projects
-3. Calendar: ship the `.ics` feed first (works everywhere, no auth needed)
-4. Notion-style views (timeline, kanban) on top of the same data
-5. Lecture pages: slide upload + syllabus-topic cross-reference → generated pre-review content, linked from the lecture's calendar event
-6. Multi-recipient calendar sync, direct Google Calendar API push (if instant sync becomes a priority)
+1. Syllabus upload + AI extraction → structured course record (deadlines *and* the lecture schedule) — **done**
+2. Database schema + basic CRUD UI for assignments/quizzes/projects — **done**
+3. Calendar: ship the `.ics` feed first (works everywhere, no auth needed) — **done**
+4. Notion-style views (timeline, kanban) on top of the same data — **done**
+5. Lecture pages: slide upload + syllabus-topic cross-reference → generated pre-review content, linked from the lecture's calendar event — **done**
+6. Multi-recipient calendar sync, direct Google Calendar API push (if instant sync becomes a priority) — **multi-recipient `.ics` done; direct Google push not started** (needs a real Google Cloud OAuth client ID/secret to build against)
