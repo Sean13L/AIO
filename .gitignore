@@ -8,3 +8,4 @@ web/.next/
 worker/data/
 worker/dist/
 *.tsbuildinfo
+.claude/settings.local.json

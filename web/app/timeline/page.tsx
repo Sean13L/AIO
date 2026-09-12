@@ -80,6 +80,7 @@ export default function TimelinePage() {
       {groups.map((group) => (
         <div key={group.label} className="card">
           <h2>{group.label}</h2>
+          <div className="table-scroll">
           <table>
             <thead>
               <tr>
@@ -117,6 +118,7 @@ export default function TimelinePage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       ))}
     </div>

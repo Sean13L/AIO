@@ -253,6 +253,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
       ) : items.length === 0 ? (
         <p className="muted">No items yet — add one above.</p>
       ) : (
+        <div className="table-scroll">
         <table>
           <thead>
             <tr>
@@ -367,6 +368,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
             )}
           </tbody>
         </table>
+        </div>
       )}
 
       <h2 style={{ marginTop: "2rem" }}>Lecture schedule</h2>
@@ -378,6 +380,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
           <Link href="/upload">upload one</Link>.
         </p>
       ) : (
+        <div className="table-scroll">
         <table>
           <thead>
             <tr>
@@ -402,6 +405,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );
