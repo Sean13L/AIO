@@ -28,9 +28,9 @@ providers.push(
   })
 );
 
-// Dev-only stand-in for real sign-in, mirroring mockExtractSyllabus.ts /
-// mockGeneratePreview.ts in server/: lets the whole auth flow (and every
-// page behind it) be tested locally with no Google OAuth app and no email
+// Dev-only stand-in for real sign-in, mirroring the mockExtractSyllabus.ts /
+// mockGeneratePreview.ts pattern: lets the whole auth flow (and every page
+// behind it) be tested locally with no Google OAuth app and no email
 // service configured. Never included in production builds.
 if (process.env.NODE_ENV !== "production") {
   providers.push(

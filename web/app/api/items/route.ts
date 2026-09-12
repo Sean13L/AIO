@@ -3,8 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/session";
 
 // All items across every course for the current user, with course info
-// attached — backs the timeline/board views and mirrors the old GET
-// /api/items shape from server/'s Express API.
+// attached — backs the timeline/board views.
 export async function GET() {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: "Not signed in" }, { status: 401 });

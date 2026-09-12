@@ -5,8 +5,8 @@
 //
 // Falls back to logging the link to the server console when RESEND_API_KEY
 // isn't set, so magic-link sign-in is fully testable locally with no email
-// service configured — same "mock" pattern as mockExtractSyllabus.ts and
-// mockGeneratePreview.ts in server/.
+// service configured — same "mock" pattern as extraction/mockExtractSyllabus.ts
+// and preview/mockGeneratePreview.ts.
 export async function sendVerificationRequest({
   identifier,
   url,
