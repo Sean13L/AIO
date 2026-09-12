@@ -156,10 +156,10 @@ export function buildIcsFeed({ items, lectures, webBaseUrl }: BuildIcsFeedOption
           lecture.week_number ? ` (Week ${lecture.week_number})` : ""
         }`,
         description: lecture.topics,
-        // Should link to the lecture's dedicated pre-review page once that
-        // exists (Build Order step 5) — the course page is a placeholder
-        // until then.
-        url: `${webBaseUrl}/courses/${lecture.course_id}`,
+        // Links to the lecture's dedicated pre-review page — see CLAUDE.md
+        // Calendar section ("Each lecture event links directly to its
+        // pre-review page").
+        url: `${webBaseUrl}/courses/${lecture.course_id}/lectures/${lecture.id}`,
       })
     );
   }

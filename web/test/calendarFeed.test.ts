@@ -50,6 +50,14 @@ describe.skipIf(!hasDb)("Calendar feed API routes (requires DATABASE_URL)", () =
         weight: "25%",
       },
     });
+    const lecture = await prisma.lectures.create({
+      data: {
+        course_id: course.id,
+        scheduled_at: new Date("2026-09-14T10:00:00Z"),
+        week_number: 1,
+        topics: "Introduction",
+      },
+    });
 
     const { GET: getFeed } = await import("@/app/api/calendar-feed/route");
     const feedRes = await getFeed(new NextRequest("http://localhost/api/calendar-feed"));
@@ -71,6 +79,13 @@ describe.skipIf(!hasDb)("Calendar feed API routes (requires DATABASE_URL)", () =
     expect(body).toContain("DTSTART;VALUE=DATE:20260920");
     expect(body).toContain("SUMMARY:CS135: Midterm");
     expect(body).toContain("DTSTART:20261015T140000Z");
+    // Lecture events must link to their own dedicated pre-review page (per
+    // CLAUDE.md's Calendar section), not just the course page — regression
+    // coverage for a bug where this pointed at the course page only.
+    expect(body).toContain("SUMMARY:CS135: Lecture (Week 1)");
+    expect(body.replace(/\r\n /g, "")).toContain(
+      `URL:http://localhost:3000/courses/${course.id}/lectures/${lecture.id}`
+    );
 
     const badTokenRes = await getIcs(new NextRequest("http://localhost/calendar/bad.ics"), {
       params: Promise.resolve({ token: "not-a-real-token.ics" }),
