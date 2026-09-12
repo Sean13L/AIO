@@ -72,6 +72,11 @@ export interface Lecture {
   created_at: string;
 }
 
+export interface LectureWithCourse extends Lecture {
+  course_code: string;
+  course_name: string;
+}
+
 export interface Todo {
   id: string;
   title: string;

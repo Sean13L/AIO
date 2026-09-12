@@ -175,6 +175,78 @@ form.inline label {
   font-size: 0.9rem;
 }
 
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.calendar-nav h2 {
+  margin: 0;
+  min-width: 160px;
+  text-align: center;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  background: #e2e2e2;
+  border: 1px solid #e2e2e2;
+}
+
+.calendar-weekday {
+  background: #f0f0f0;
+  padding: 0.4rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #777;
+  text-align: center;
+}
+
+.calendar-cell {
+  background: #fff;
+  min-height: 100px;
+  padding: 0.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.calendar-cell-empty {
+  background: #fafafa;
+}
+
+.calendar-today {
+  background: #eef3ff;
+}
+
+.calendar-day-number {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.calendar-event {
+  display: block;
+  font-size: 0.72rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  text-decoration: none;
+  color: #1a1a1a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendar-event-item {
+  background: #e6ecff;
+}
+
+.calendar-event-lecture {
+  background: #e6f7ec;
+}
+
 .todo-list {
   list-style: none;
   padding: 0;

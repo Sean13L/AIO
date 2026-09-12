@@ -6,6 +6,7 @@ import { pool } from "../../db/client.js";
 import { getCourseForUser } from "../../db/repositories/courses.js";
 import {
   getLectureForUser,
+  listLecturesWithCourseForUser,
   markLecturePreviewViewed,
   setLecturePreview,
   setLectureSlidesUrl,
@@ -26,6 +27,19 @@ const upload = multer({
 });
 
 export const lecturesRouter = Router();
+
+// All lectures across every course for the current user, with course info
+// attached — backs the internal calendar view (CLAUDE.md's Calendar
+// section: "Internal calendar view showing all extracted dates across all
+// courses"), alongside the items from GET /api/items.
+lecturesRouter.get("/lectures", async (req, res, next) => {
+  try {
+    const lectures = await listLecturesWithCourseForUser(pool, req.userId!);
+    res.json(lectures);
+  } catch (err) {
+    next(err);
+  }
+});
 
 lecturesRouter.get("/lectures/:lectureId", async (req, res, next) => {
   try {

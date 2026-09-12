@@ -20,6 +20,7 @@ export function TopBar() {
         </Link>
         <nav className="nav-links">
           <Link href="/">Courses</Link>
+          <Link href="/calendar">Calendar</Link>
           <Link href="/timeline">Timeline</Link>
           <Link href="/board">Board</Link>
           <Link href="/todos">To Do</Link>

@@ -7,6 +7,7 @@ import type {
   ItemType,
   ItemWithCourse,
   Lecture,
+  LectureWithCourse,
   Todo,
 } from "./types";
 
@@ -98,6 +99,8 @@ export const api = {
 
   listLectures: (email: string, courseId: string) =>
     request<Lecture[]>(email, `/api/courses/${courseId}/lectures`),
+
+  listAllLectures: (email: string) => request<LectureWithCourse[]>(email, "/api/lectures"),
 
   getLecture: (email: string, lectureId: string) =>
     request<Lecture>(email, `/api/lectures/${lectureId}`),

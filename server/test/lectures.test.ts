@@ -72,6 +72,33 @@ describe.skipIf(!hasDb)("Lecture pre-review pipeline (requires DATABASE_URL)", (
     fs.unlinkSync(path.join(process.cwd(), "uploads", "lectures", uploadedFile));
   });
 
+  it("lists all lectures across courses for the user, with course_code attached", async () => {
+    const course1 = await request(app)
+      .post("/api/courses")
+      .set("X-User-Email", testEmail)
+      .send({ course_code: "LIST-A", course_name: "Course A", semester: "1A" });
+    const course2 = await request(app)
+      .post("/api/courses")
+      .set("X-User-Email", testEmail)
+      .send({ course_code: "LIST-B", course_name: "Course B", semester: "1A" });
+
+    await createLecture(pool, course1.body.id, {
+      scheduled_at: "2026-09-08T14:00:00Z",
+      week_number: 1,
+      topics: null,
+    });
+    await createLecture(pool, course2.body.id, {
+      scheduled_at: "2026-09-09T14:00:00Z",
+      week_number: 1,
+      topics: null,
+    });
+
+    const res = await request(app).get("/api/lectures").set("X-User-Email", testEmail);
+    expect(res.status).toBe(200);
+    const codes = res.body.map((l: { course_code: string }) => l.course_code);
+    expect(codes).toEqual(expect.arrayContaining(["LIST-A", "LIST-B"]));
+  });
+
   it("404s for a lecture belonging to another user", async () => {
     const otherEmail = `lecture-test-other-${Date.now()}@example.com`;
     const course = await request(app)
