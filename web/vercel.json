@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/generate-previews",
+      "schedule": "0 8 * * *"
+    }
+  ]
+}

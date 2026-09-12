@@ -72,12 +72,14 @@ The app's data model should mirror the structure already validated in Notion:
   - Needs a trigger mechanism — e.g., a scheduled job that checks "what's the next lecture for each course" and generates/refreshes the preview a set amount of time beforehand.
 
 ## Implemented Stack
-Hybrid architecture, split so the parts that can't run serverless don't have to:
-- **`web/`** — Next.js (App Router) + Tailwind, deployed stateless/serverless. Next.js API routes (no separate Express layer), Prisma against Postgres, NextAuth.js (Google OAuth + magic links via a direct Resend API call — not v5-beta, not nodemailer). Calls Claude directly for syllabus extraction.
-- **`worker/`** — Express container, always-on. Owns the two things a serverless deploy can't: persistent file storage for uploaded slides/syllabi (`STORAGE_ROOT` volume) and the lecture-preview scheduler (polling loop, calls Claude to generate previews ahead of the lecture). `web/` talks to it over HTTP with a bearer `WORKER_API_KEY`.
-- **Database:** Postgres, one shared instance in practice. `worker/prisma/schema.prisma` is a hand-kept duplicate of `web/prisma/schema.prisma` (Docker build contexts can't reach outside their own directory) — see `worker/README.md`'s "Known limitation" for the drift risk.
+A single Next.js app (`web/`) — the earlier `worker/` + Docker Compose hybrid split was collapsed back into one app once its two jobs became serverless-viable, so there's now one deployable unit instead of two:
+- **App:** Next.js (App Router) + Tailwind, Next.js API routes, Prisma against Postgres, NextAuth.js (Google OAuth + magic links via a direct Resend API call — not v5-beta, not nodemailer). Calls Claude directly for syllabus extraction and lecture-preview generation.
+- **Database:** Postgres — Neon in production (real free tier, no expiration), a local native install for dev. One `schema.prisma`, no more duplication.
+- **File storage** (uploaded syllabi + lecture slides): Cloudflare R2 (S3-compatible, free, no egress fees) via `web/lib/storage.ts`. Falls back to local disk under `web/.data/` when R2 env vars aren't set, so local dev/CI need no external service — same pattern as the mock syllabus extractor and mock preview generator below.
+- **Lecture-preview scheduler:** was an always-on polling loop in `worker/`; now `web/app/api/cron/generate-previews/route.ts`, triggered by Vercel Cron (see `vercel.json`) since Vercel's free Hobby tier only allows daily cron — acceptable given `PREVIEW_LEAD_HOURS` defaults to 48h.
 - **Calendar sync:** `.ics` subscription feed, shipped (per-user token URL, multiple sync-target labels supported). Direct Google Calendar OAuth push is *not yet built* — schema has a slot for it (`sync_target_type`, `google_oauth_token`) but the route only accepts `ics_subscriber` today.
-- **CI:** GitHub Actions (`.github/workflows/ci.yml`) — typecheck/test/build for both `web/` and `worker/` against a real Postgres service container.
+- **CI:** GitHub Actions (`.github/workflows/ci.yml`) — typecheck/test/build against a real Postgres service container.
+- **Hosting:** Vercel (free Hobby tier) + Neon (free) + Cloudflare R2 (free). Chosen after checking current 2026 pricing — Railway/Render/Fly.io no longer have usable free tiers for an always-on container with persistent storage, which is what made collapsing out of the worker/ split the right call rather than just paying to keep it.
 
 ## Open Questions — resolved
 1. Deadlines/Assignments: consolidated into one `items` table with a `source` field (auto-extracted vs. manual), as recommended — not the two-database Notion split.

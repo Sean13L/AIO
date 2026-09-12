@@ -11,13 +11,11 @@ vi.mock("@/lib/session", () => ({
   getCurrentUserId: vi.fn(async () => mockSession.userId),
 }));
 
-vi.mock("@/lib/workerClient", () => ({
-  uploadFileToWorker: vi.fn(
-    async (namespace: string, file: { buffer: Buffer; filename: string }) => ({
-      filename: file.filename,
-      url: `http://worker.test/files/${namespace}/${file.filename}`,
-    })
-  ),
+vi.mock("@/lib/storage", () => ({
+  uploadFile: vi.fn(async (namespace: string, _buffer: Buffer, filename: string) => ({
+    filename,
+    url: `http://storage.test/files/${namespace}/${filename}`,
+  })),
 }));
 
 const sampleSyllabus = `CS 135 — Designing Functional Programs
@@ -68,7 +66,7 @@ describe.skipIf(!hasDb)("Syllabus ingestion API route (requires DATABASE_URL)", 
     await prisma.courses.delete({ where: { id: result.courseId } });
   });
 
-  it("archives an uploaded file on the worker and stores its URL as file_url", async () => {
+  it("archives an uploaded file and stores its URL as file_url", async () => {
     const { POST } = await import("@/app/api/syllabi/route");
     const formData = new FormData();
     formData.append("file", new File([sampleSyllabus], "syllabus.txt", { type: "text/plain" }));
@@ -80,7 +78,7 @@ describe.skipIf(!hasDb)("Syllabus ingestion API route (requires DATABASE_URL)", 
     const result = await res.json();
 
     const syllabus = await prisma.syllabi.findUnique({ where: { id: result.syllabusId } });
-    expect(syllabus?.file_url).toMatch(/^http:\/\/worker\.test\/files\/syllabi\//);
+    expect(syllabus?.file_url).toMatch(/^http:\/\/storage\.test\/files\/syllabi\//);
 
     await prisma.courses.delete({ where: { id: result.courseId } });
   });

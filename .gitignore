@@ -5,7 +5,6 @@ dist/
 *.log
 web/uploads/
 web/.next/
-worker/data/
-worker/dist/
+web/.data/
 *.tsbuildinfo
 .claude/settings.local.json

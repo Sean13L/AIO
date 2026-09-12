@@ -1,7 +1,9 @@
+import crypto from "node:crypto";
+import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUserId } from "@/lib/session";
 import { ingestSyllabus } from "@/lib/ingestSyllabus";
-import { uploadFileToWorker } from "@/lib/workerClient";
+import { uploadFile } from "@/lib/storage";
 
 export async function POST(req: NextRequest) {
   const userId = await getCurrentUserId();
@@ -15,14 +17,14 @@ export async function POST(req: NextRequest) {
     if (file instanceof File) {
       const buffer = Buffer.from(await file.arrayBuffer());
 
-      // Archived on the worker's persistent storage purely for
-      // traceability (syllabi.file_url) — the actual text extraction below
-      // happens in-memory, right here, since it only needs this request's
-      // own upload and doesn't need anything persisted.
-      const { url } = await uploadFileToWorker("syllabi", {
+      // Archived purely for traceability (syllabi.file_url) — the actual
+      // text extraction below happens in-memory, right here, since it only
+      // needs this request's own upload and doesn't need anything persisted.
+      const { url } = await uploadFile(
+        "syllabi",
         buffer,
-        filename: `${Date.now()}-${file.name}`,
-      });
+        `${crypto.randomUUID()}${path.extname(file.name)}`
+      );
 
       const result = await ingestSyllabus({
         userId,

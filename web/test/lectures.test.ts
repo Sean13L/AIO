@@ -11,26 +11,21 @@ vi.mock("@/lib/session", () => ({
   getCurrentUserId: vi.fn(async () => mockSession.userId),
 }));
 
-// The routes now talk to the worker service over HTTP for file storage —
-// stub that out with an in-memory store so these tests don't need a real
-// worker running.
-const mockWorkerFiles = vi.hoisted(() => new Map<string, string>());
-vi.mock("@/lib/workerClient", () => ({
-  uploadFileToWorker: vi.fn(
-    async (
-      namespace: string,
-      file: { buffer: Buffer; filename: string },
-      desiredFilename?: string
-    ) => {
-      const filename = desiredFilename ?? file.filename;
-      mockWorkerFiles.set(`${namespace}/${filename}`, file.buffer.toString("utf8"));
-      return { filename, url: `http://worker.test/files/${namespace}/${filename}` };
-    }
-  ),
-  getFileTextFromWorker: vi.fn(async (namespace: string, filename: string) => {
-    return mockWorkerFiles.get(`${namespace}/${filename}`) ?? null;
+// Stub file storage out with an in-memory store so these tests don't need
+// real R2 credentials or local disk.
+const mockFiles = vi.hoisted(() => new Map<string, Buffer>());
+vi.mock("@/lib/storage", () => ({
+  uploadFile: vi.fn(async (namespace: string, buffer: Buffer, filename: string) => {
+    mockFiles.set(`${namespace}/${filename}`, buffer);
+    return { filename, url: `http://storage.test/files/${namespace}/${filename}` };
   }),
-  filenameFromWorkerUrl: (fileUrl: string | null) => (fileUrl ? fileUrl.split("/").pop()! : null),
+  downloadFile: vi.fn(async (namespace: string, filename: string) => {
+    return mockFiles.get(`${namespace}/${filename}`) ?? null;
+  }),
+  deleteFile: vi.fn(async (namespace: string, filename: string) => {
+    mockFiles.delete(`${namespace}/${filename}`);
+  }),
+  filenameFromFileUrl: (fileUrl: string | null) => (fileUrl ? fileUrl.split("/").pop()! : null),
 }));
 
 describe.skipIf(!hasDb)("Lectures API routes (requires DATABASE_URL)", () => {
