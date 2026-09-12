@@ -4,28 +4,98 @@
    pages; new components (e.g. app/auth/signin) use Tailwind utilities
    directly. Not migrating the rest yet — see project notes. */
 
+:root {
+  --color-bg: #f6f7fb;
+  --color-surface: #ffffff;
+  --color-border: #e5e7f0;
+  --color-border-strong: #d1d5e3;
+  --color-text: #14162b;
+  --color-text-muted: #6b7086;
+  --color-text-faint: #9497ab;
+
+  --color-primary: #6366f1;
+  --color-primary-hover: #4f46e5;
+  --color-primary-light: #eef0fe;
+
+  --color-danger: #dc3d5a;
+  --color-danger-hover: #c22e49;
+  --color-danger-light: #fdeef1;
+
+  --color-success: #17a673;
+  --color-success-light: #e9f9f2;
+  --color-warning: #d98a1f;
+  --color-warning-light: #fdf3e3;
+  --color-info: #3b82f6;
+  --color-info-light: #eaf1ff;
+
+  --radius-sm: 7px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+
+  --shadow-sm: 0 1px 2px rgba(20, 22, 43, 0.05);
+  --shadow-md: 0 2px 4px rgba(20, 22, 43, 0.04), 0 8px 24px rgba(20, 22, 43, 0.07);
+  --shadow-focus: 0 0 0 3px rgba(99, 102, 241, 0.18);
+
+  --ease: 160ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 * {
   box-sizing: border-box;
 }
 
+html {
+  font-family: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  color: #1a1a1a;
-  background: #fafafa;
+  color: var(--color-text);
+  background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 a {
-  color: #2454ff;
+  color: var(--color-primary);
 }
 
+h1,
+h2,
+h3 {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+}
+
+h1 {
+  font-size: 1.7rem;
+  margin: 0 0 0.4rem;
+}
+
+h2 {
+  font-size: 1.05rem;
+  margin: 0 0 0.6rem;
+}
+
+h3 {
+  font-size: 0.95rem;
+  margin: 0 0 0.4rem;
+}
+
+/* ---------- Top navigation ---------- */
+
 .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1.5rem;
-  background: #fff;
-  border-bottom: 1px solid #e2e2e2;
+  padding: 0.85rem 1.75rem;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: saturate(180%) blur(10px);
+  -webkit-backdrop-filter: saturate(180%) blur(10px);
+  border-bottom: 1px solid var(--color-border);
   flex-wrap: wrap;
   gap: 0.5rem;
 }
@@ -33,136 +103,225 @@ a {
 .brand-nav {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  gap: 1.75rem;
+  flex-wrap: wrap;
 }
 
 .brand {
-  font-weight: 600;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   text-decoration: none;
-  color: #1a1a1a;
+  color: var(--color-text);
+  font-size: 1.02rem;
 }
 
 .nav-links {
   display: flex;
-  gap: 1rem;
+  gap: 0.3rem;
+  flex-wrap: wrap;
 }
 
 .nav-links a {
-  color: #555;
+  color: var(--color-text-muted);
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: 0.87rem;
+  font-weight: 500;
+  padding: 0.4rem 0.65rem;
+  border-radius: var(--radius-sm);
+  transition: color var(--ease), background var(--ease);
 }
 
 .nav-links a:hover {
-  color: #2454ff;
+  color: var(--color-text);
+  background: var(--color-bg);
 }
 
 .nav-links a.active {
-  color: #2454ff;
+  color: var(--color-primary);
   font-weight: 600;
+  background: var(--color-primary-light);
 }
 
 .user-form {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   flex-wrap: wrap;
 }
 
 .user-form input {
-  padding: 0.35rem 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
   min-width: 220px;
 }
 
 .current-user {
-  font-size: 0.85rem;
-  color: #666;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
 }
 
 .container {
-  max-width: 960px;
+  max-width: 980px;
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: 2rem 1.5rem 4rem;
 }
+
+/* ---------- Buttons & form controls ---------- */
 
 button {
   cursor: pointer;
-  border: 1px solid #2454ff;
-  background: #2454ff;
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary);
   color: #fff;
-  border-radius: 4px;
-  padding: 0.4rem 0.8rem;
-  font-size: 0.9rem;
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.9rem;
+  font-size: 0.87rem;
+  font-weight: 600;
+  font-family: inherit;
+  transition: background var(--ease), border-color var(--ease), box-shadow var(--ease),
+    transform var(--ease);
+}
+
+button:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
 }
 
 button.secondary {
-  background: #fff;
-  color: #2454ff;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  border-color: var(--color-border-strong);
+}
+
+button.secondary:hover {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
 }
 
 button.danger {
-  background: #fff;
-  color: #c0392b;
-  border-color: #c0392b;
+  background: var(--color-surface);
+  color: var(--color-danger);
+  border-color: var(--color-border-strong);
+}
+
+button.danger:hover {
+  background: var(--color-danger-light);
+  border-color: var(--color-danger);
 }
 
 input,
 select,
 textarea {
-  padding: 0.35rem 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
   font: inherit;
+  color: var(--color-text);
+  background: var(--color-surface);
+  transition: border-color var(--ease), box-shadow var(--ease);
 }
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-text-faint);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus);
+}
+
+/* Native file inputs don't shrink to fit their container like text inputs
+   do — their intrinsic "Choose File / no file chosen" rendering can overflow
+   a narrow card without this. */
+input[type="file"] {
+  max-width: 100%;
+}
+
+/* ---------- Tables ---------- */
 
 .table-scroll {
   overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 1rem;
 }
 
 th,
 td {
   text-align: left;
-  padding: 0.5rem 0.6rem;
-  border-bottom: 1px solid #eee;
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid var(--color-border);
   vertical-align: top;
 }
 
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr {
+  transition: background var(--ease);
+}
+
+tbody tr:hover {
+  background: var(--color-bg);
+}
+
 th {
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  color: #777;
+  letter-spacing: 0.04em;
+  color: var(--color-text-faint);
+  font-weight: 700;
+  background: var(--color-bg);
 }
 
 form.inline {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.75rem;
   flex-wrap: wrap;
   align-items: end;
-  margin: 1rem 0;
+  margin: 1.1rem 0;
 }
 
 form.inline label {
   display: flex;
   flex-direction: column;
-  font-size: 0.8rem;
-  color: #555;
-  gap: 0.2rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  gap: 0.3rem;
 }
 
+/* ---------- Cards ---------- */
+
 .card {
-  background: #fff;
-  border: 1px solid #e2e2e2;
-  border-radius: 8px;
-  padding: 1rem 1.25rem;
-  margin-bottom: 1rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow-sm);
 }
 
 .course-list {
@@ -171,30 +330,53 @@ form.inline label {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 
 .course-list li {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.1rem;
+  transition: box-shadow var(--ease), border-color var(--ease);
+}
+
+.course-list li:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-border-strong);
+}
+
+.course-list a {
+  text-decoration: none;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.course-list a:hover {
+  color: var(--color-primary);
 }
 
 .muted {
-  color: #888;
-  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  font-size: 0.87rem;
 }
 
 .error {
-  color: #c0392b;
-  font-size: 0.9rem;
+  color: var(--color-danger);
+  font-size: 0.87rem;
+  font-weight: 500;
 }
+
+/* ---------- Calendar ---------- */
 
 .calendar-nav {
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
 }
 
 .calendar-nav h2 {
@@ -205,67 +387,88 @@ form.inline label {
 
 .calendar-grid-scroll {
   overflow-x: auto;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
 }
 
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 1px;
-  background: #e2e2e2;
-  border: 1px solid #e2e2e2;
+  background: var(--color-border);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
   min-width: 700px;
 }
 
 .calendar-weekday {
-  background: #f0f0f0;
-  padding: 0.4rem;
-  font-size: 0.75rem;
+  background: var(--color-surface);
+  padding: 0.55rem;
+  font-size: 0.68rem;
+  font-weight: 700;
   text-transform: uppercase;
-  color: #777;
+  letter-spacing: 0.04em;
+  color: var(--color-text-faint);
   text-align: center;
 }
 
 .calendar-cell {
-  background: #fff;
+  background: var(--color-surface);
   min-height: 100px;
-  padding: 0.3rem;
+  padding: 0.4rem;
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.25rem;
+  transition: background var(--ease);
 }
 
 .calendar-cell-empty {
-  background: #fafafa;
+  background: var(--color-bg);
 }
 
 .calendar-today {
-  background: #eef3ff;
+  background: var(--color-primary-light);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
 }
 
 .calendar-day-number {
-  font-size: 0.8rem;
-  color: #666;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.calendar-today .calendar-day-number {
+  color: var(--color-primary);
 }
 
 .calendar-event {
   display: block;
-  font-size: 0.72rem;
-  padding: 0.1rem 0.3rem;
-  border-radius: 3px;
+  font-size: 0.71rem;
+  font-weight: 500;
+  padding: 0.15rem 0.4rem;
+  border-radius: 5px;
   text-decoration: none;
-  color: #1a1a1a;
+  color: var(--color-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition: filter var(--ease);
+}
+
+.calendar-event:hover {
+  filter: brightness(0.96);
 }
 
 .calendar-event-item {
-  background: #e6ecff;
+  background: var(--color-info-light);
 }
 
 .calendar-event-lecture {
-  background: #e6f7ec;
+  background: var(--color-success-light);
 }
+
+/* ---------- To Do ---------- */
 
 .todo-list {
   list-style: none;
@@ -273,30 +476,44 @@ form.inline label {
   margin: 1rem 0 0;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.5rem;
 }
 
 .todo-list li {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #fff;
-  border: 1px solid #e2e2e2;
-  border-radius: 6px;
-  padding: 0.5rem 0.75rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.65rem 0.9rem;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--ease);
+}
+
+.todo-list li:hover {
+  box-shadow: var(--shadow-md);
 }
 
 .todo-item {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.7rem;
   cursor: pointer;
+}
+
+.todo-item input[type="checkbox"] {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--color-primary);
 }
 
 .todo-done span {
   text-decoration: line-through;
-  color: #999;
+  color: var(--color-text-faint);
 }
+
+/* ---------- Board ---------- */
 
 .board-scroll {
   overflow-x: auto;
@@ -304,59 +521,84 @@ form.inline label {
 
 .board {
   display: flex;
-  gap: 1rem;
+  gap: 1.1rem;
   margin-top: 1rem;
 }
 
 .board-column {
-  background: #f0f0f0;
-  border: 1px solid #e2e2e2;
-  border-radius: 8px;
-  padding: 0.75rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 0.85rem;
   min-height: 200px;
   flex: 1 0 240px;
+  transition: background var(--ease), border-color var(--ease);
 }
 
 .board-column.drag-over {
-  background: #e6ecff;
-  border-color: #2454ff;
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
 }
 
 .board-column h2 {
-  font-size: 0.9rem;
+  font-size: 0.75rem;
+  font-weight: 700;
   text-transform: uppercase;
-  color: #666;
-  margin: 0 0 0.75rem;
+  letter-spacing: 0.04em;
+  color: var(--color-text-faint);
+  margin: 0 0 0.85rem;
+  padding: 0 0.15rem;
 }
 
 .board-card {
-  background: #fff;
-  border: 1px solid #e2e2e2;
-  border-radius: 6px;
-  padding: 0.6rem 0.7rem;
-  margin-bottom: 0.6rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.7rem 0.8rem;
+  margin-bottom: 0.65rem;
   cursor: grab;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--ease), transform var(--ease);
+}
+
+.board-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 .board-card select {
-  margin-top: 0.4rem;
+  margin-top: 0.5rem;
   width: 100%;
 }
 
 .board-card-course {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.board-card-course a {
+  text-decoration: none;
+  color: inherit;
 }
 
 .board-card-name {
-  font-weight: 500;
-  margin: 0.15rem 0;
+  font-weight: 600;
+  margin: 0.2rem 0;
 }
+
+/* ---------- Badges ---------- */
 
 .badge {
   display: inline-block;
-  font-size: 0.7rem;
-  padding: 0.1rem 0.4rem;
-  border-radius: 3px;
-  background: #eee;
-  color: #555;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
 }
