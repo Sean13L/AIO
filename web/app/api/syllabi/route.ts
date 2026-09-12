@@ -1,8 +1,7 @@
-import fs from "node:fs";
-import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUserId } from "@/lib/session";
 import { ingestSyllabus } from "@/lib/ingestSyllabus";
+import { uploadFileToWorker } from "@/lib/workerClient";
 
 export async function POST(req: NextRequest) {
   const userId = await getCurrentUserId();
@@ -16,17 +15,18 @@ export async function POST(req: NextRequest) {
     if (file instanceof File) {
       const buffer = Buffer.from(await file.arrayBuffer());
 
-      // Kept for traceability back to what was extracted, matching
-      // syllabi.file_url's intent in schema.sql.
-      const uploadsDir = path.join(process.cwd(), "uploads", "syllabi");
-      fs.mkdirSync(uploadsDir, { recursive: true });
-      const fileName = `${Date.now()}-${file.name}`;
-      fs.writeFileSync(path.join(uploadsDir, fileName), buffer);
+      // Archived on the worker's persistent storage purely for
+      // traceability (syllabi.file_url) — the actual text extraction below
+      // happens in-memory, right here, since it only needs this request's
+      // own upload and doesn't need anything persisted.
+      const { url } = await uploadFileToWorker("syllabi", {
+        buffer,
+        filename: `${Date.now()}-${file.name}`,
+      });
 
-      const base = `${req.nextUrl.protocol}//${req.nextUrl.host}`;
       const result = await ingestSyllabus({
         userId,
-        fileUrl: `${base}/uploads/syllabi/${fileName}`,
+        fileUrl: url,
         input: { kind: "file", buffer, fileName: file.name },
       });
       return NextResponse.json(result, { status: 201 });

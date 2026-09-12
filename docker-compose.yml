@@ -1,0 +1,50 @@
+# Runs the container half of the hybrid architecture: Postgres + the
+# worker service (persistent file storage + the preview-generation
+# scheduler). web/ is deliberately NOT here — it's meant to deploy
+# serverless (Vercel or similar); run it locally with `npm run dev` in
+# web/, pointed at this worker via WORKER_URL.
+#
+# NOTE: written to standard Docker Compose conventions but not build-tested
+# in this environment (no Docker available here) — verify `docker compose
+# up` actually builds and runs cleanly before relying on this.
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: syllabus_assistant
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  worker:
+    build: ./worker
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "4100:4100"
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/syllabus_assistant
+      PORT: 4100
+      STORAGE_ROOT: /data
+      WORKER_API_KEY: ${WORKER_API_KEY:?set WORKER_API_KEY in your shell or a .env file}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-5}
+      PREVIEW_LEAD_HOURS: ${PREVIEW_LEAD_HOURS:-48}
+      PREVIEW_POLL_INTERVAL_MINUTES: ${PREVIEW_POLL_INTERVAL_MINUTES:-15}
+    volumes:
+      - worker_data:/data
+
+volumes:
+  postgres_data:
+  worker_data:

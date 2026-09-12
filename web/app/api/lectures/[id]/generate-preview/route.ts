@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/session";
-import { readSlidesText } from "@/lib/preview/readSlidesText";
+import { filenameFromWorkerUrl, getFileTextFromWorker } from "@/lib/workerClient";
 import { generatePreview } from "@/lib/preview/generatePreview";
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -15,7 +15,12 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   });
   if (!lecture) return NextResponse.json({ error: "Lecture not found" }, { status: 404 });
 
-  const slidesText = await readSlidesText(lecture.slides_url);
+  // This app has no local disk access to the uploaded slides — the file
+  // lives on the worker's persistent volume, so text extraction happens
+  // there too (see worker/src/routes/files.ts's /text endpoint).
+  const filename = filenameFromWorkerUrl(lecture.slides_url);
+  const slidesText = filename ? await getFileTextFromWorker("lectures", filename) : null;
+
   const previewContent = await generatePreview({
     courseCode: lecture.courses.course_code,
     topics: lecture.topics,

@@ -1,14 +1,14 @@
-import { prisma } from "./prisma";
-import { readSlidesText } from "./preview/readSlidesText";
-import { generatePreview } from "./preview/generatePreview";
+import fs from "node:fs";
+import { prisma } from "./prisma.js";
+import { filePath, isSafeFilename } from "./storage.js";
+import { extractRawText } from "./extraction/parseFile.js";
+import { generatePreview } from "./preview/generatePreview.js";
 
 // Trigger mechanism for pre-lecture previews (CLAUDE.md: "a scheduled job
 // that checks what's the next lecture for each course and generates/
-// refreshes the preview a set amount of time beforehand"). A simple
-// in-process poller rather than a separate cron/queue system — reasonable
-// for a single-instance deployment (`next start` is a persistent Node
-// process, not serverless); would need to move to a real job queue if this
-// ever runs on more than one instance or a serverless platform.
+// refreshes the preview a set amount of time beforehand"). Lives in this
+// always-on worker rather than the (serverless) web app, since serverless
+// functions don't stay warm for a setInterval loop.
 const LEAD_HOURS = Number(process.env.PREVIEW_LEAD_HOURS ?? 48);
 const POLL_INTERVAL_MINUTES = Number(process.env.PREVIEW_POLL_INTERVAL_MINUTES ?? 15);
 
@@ -17,6 +17,17 @@ interface LectureNeedingPreview {
   slides_url: string | null;
   topics: string | null;
   courses: { course_code: string };
+}
+
+async function readSlidesText(slidesUrl: string | null): Promise<string | null> {
+  if (!slidesUrl) return null;
+  const filename = slidesUrl.split("/").pop();
+  if (!filename || !isSafeFilename(filename)) return null;
+
+  const target = filePath("lectures", filename);
+  if (!fs.existsSync(target)) return null;
+
+  return extractRawText({ kind: "file", buffer: fs.readFileSync(target), fileName: filename });
 }
 
 async function generateForLecture(lecture: LectureNeedingPreview): Promise<void> {
@@ -62,12 +73,7 @@ async function sweep(): Promise<void> {
   }
 }
 
-let started = false;
-
 export function startPreviewScheduler(): void {
-  if (started) return; // guards against next dev re-invoking register()
-  started = true;
-
   console.log(
     `[scheduler] pre-lecture preview generator: checking every ${POLL_INTERVAL_MINUTES}min ` +
       `for lectures within ${LEAD_HOURS}h`

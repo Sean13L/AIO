@@ -1,10 +1,7 @@
 import "dotenv/config";
-import fs from "node:fs";
-import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { lectureUploadsDir } from "@/lib/preview/readSlidesText";
 
 const hasDb = Boolean(process.env.DATABASE_URL);
 const testEmail = `lecture-test-${Date.now()}@example.com`;
@@ -12,6 +9,28 @@ const testEmail = `lecture-test-${Date.now()}@example.com`;
 const mockSession = vi.hoisted(() => ({ userId: "" }));
 vi.mock("@/lib/session", () => ({
   getCurrentUserId: vi.fn(async () => mockSession.userId),
+}));
+
+// The routes now talk to the worker service over HTTP for file storage —
+// stub that out with an in-memory store so these tests don't need a real
+// worker running.
+const mockWorkerFiles = vi.hoisted(() => new Map<string, string>());
+vi.mock("@/lib/workerClient", () => ({
+  uploadFileToWorker: vi.fn(
+    async (
+      namespace: string,
+      file: { buffer: Buffer; filename: string },
+      desiredFilename?: string
+    ) => {
+      const filename = desiredFilename ?? file.filename;
+      mockWorkerFiles.set(`${namespace}/${filename}`, file.buffer.toString("utf8"));
+      return { filename, url: `http://worker.test/files/${namespace}/${filename}` };
+    }
+  ),
+  getFileTextFromWorker: vi.fn(async (namespace: string, filename: string) => {
+    return mockWorkerFiles.get(`${namespace}/${filename}`) ?? null;
+  }),
+  filenameFromWorkerUrl: (fileUrl: string | null) => (fileUrl ? fileUrl.split("/").pop()! : null),
 }));
 
 describe.skipIf(!hasDb)("Lectures API routes (requires DATABASE_URL)", () => {
@@ -83,7 +102,7 @@ describe.skipIf(!hasDb)("Lectures API routes (requires DATABASE_URL)", () => {
     const uploadRes = await uploadSlides(uploadReq, { params: Promise.resolve({ id: lecture.id }) });
     expect(uploadRes.status).toBe(200);
     const uploaded = await uploadRes.json();
-    expect(uploaded.slides_url).toMatch(/\/uploads\/lectures\//);
+    expect(uploaded.slides_url).toMatch(/\/files\/lectures\//);
 
     const generated2 = await generate(new NextRequest("http://localhost/api/lectures/x", { method: "POST" }), {
       params: Promise.resolve({ id: lecture.id }),
@@ -92,8 +111,6 @@ describe.skipIf(!hasDb)("Lectures API routes (requires DATABASE_URL)", () => {
     expect(body2.preview_content).toContain("accumulators");
     expect(body2.preview_content).not.toContain("No slides uploaded yet");
 
-    const uploadedFile = uploaded.slides_url.split("/").pop();
-    fs.unlinkSync(path.join(lectureUploadsDir, uploadedFile));
     await prisma.courses.delete({ where: { id: course.id } });
   });
 

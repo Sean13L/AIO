@@ -1,9 +1,8 @@
-import fs from "node:fs";
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/session";
-import { lectureUploadsDir } from "@/lib/preview/readSlidesText";
+import { uploadFileToWorker } from "@/lib/workerClient";
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024;
 
@@ -29,17 +28,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "File too large (max 25MB)" }, { status: 400 });
   }
 
-  fs.mkdirSync(lectureUploadsDir, { recursive: true });
-  const fileName = `${id}${path.extname(file.name)}`;
-  const filePath = path.join(lectureUploadsDir, fileName);
-  fs.writeFileSync(filePath, Buffer.from(await file.arrayBuffer()));
-
-  const base = `${req.nextUrl.protocol}//${req.nextUrl.host}`;
-  const slidesUrl = `${base}/uploads/lectures/${fileName}`;
+  const buffer = Buffer.from(await file.arrayBuffer());
+  // Requesting "<lectureId><ext>" as the filename means re-uploading
+  // ("Replace slides") cleanly overwrites the previous file on the worker.
+  const { url } = await uploadFileToWorker(
+    "lectures",
+    { buffer, filename: file.name },
+    `${id}${path.extname(file.name)}`
+  );
 
   const updated = await prisma.lectures.update({
     where: { id },
-    data: { slides_url: slidesUrl },
+    data: { slides_url: url },
   });
   return NextResponse.json(updated);
 }
