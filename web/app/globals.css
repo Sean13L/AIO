@@ -1,3 +1,9 @@
+@import "tailwindcss";
+
+/* Existing hand-written styles below predate Tailwind and still power most
+   pages; new components (e.g. app/auth/signin) use Tailwind utilities
+   directly. Not migrating the rest yet — see project notes. */
+
 * {
   box-sizing: border-box;
 }
