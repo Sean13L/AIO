@@ -32,3 +32,22 @@ export const itemUpdateSchema = z
   .refine((body) => (body.due_date === undefined) === (body.due_time === undefined), {
     message: "due_date and due_time must be provided together (use null for an all-day item)",
   });
+
+export const todoCreateSchema = z.object({
+  title: z.string().min(1),
+});
+
+export const todoUpdateSchema = z.object({
+  title: z.string().min(1).optional(),
+  done: z.boolean().optional(),
+});
+
+export const extracurricularInputSchema = z.object({
+  title: z.string().min(1),
+  content: z.string().nullable().optional(),
+});
+
+export const extracurricularUpdateSchema = z.object({
+  title: z.string().min(1).optional(),
+  content: z.string().nullable().optional(),
+});

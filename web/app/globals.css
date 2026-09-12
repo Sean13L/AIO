@@ -175,6 +175,37 @@ form.inline label {
   font-size: 0.9rem;
 }
 
+.todo-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.todo-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #e2e2e2;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+}
+
+.todo-done span {
+  text-decoration: line-through;
+  color: #999;
+}
+
 .board {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

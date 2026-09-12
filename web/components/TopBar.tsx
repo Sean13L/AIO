@@ -22,6 +22,8 @@ export function TopBar() {
           <Link href="/">Courses</Link>
           <Link href="/timeline">Timeline</Link>
           <Link href="/board">Board</Link>
+          <Link href="/todos">To Do</Link>
+          <Link href="/extracurriculars">Extracurriculars</Link>
         </nav>
       </div>
       {ready && (

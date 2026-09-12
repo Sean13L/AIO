@@ -71,3 +71,17 @@ export interface Lecture {
   preview_content: string | null;
   created_at: string;
 }
+
+export interface Todo {
+  id: string;
+  title: string;
+  done: boolean;
+  created_at: string;
+}
+
+export interface Extracurricular {
+  id: string;
+  title: string;
+  content: string | null;
+  created_at: string;
+}

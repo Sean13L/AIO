@@ -1,11 +1,13 @@
 import type {
   CalendarSyncTarget,
   Course,
+  Extracurricular,
   Item,
   ItemStatus,
   ItemType,
   ItemWithCourse,
   Lecture,
+  Todo,
 } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -137,4 +139,40 @@ export const api = {
     request<void>(email, `/api/calendar-feed/sync-targets/${targetId}`, {
       method: "DELETE",
     }),
+
+  listTodos: (email: string) => request<Todo[]>(email, "/api/todos"),
+
+  createTodo: (email: string, title: string) =>
+    request<Todo>(email, "/api/todos", { method: "POST", body: JSON.stringify({ title }) }),
+
+  updateTodo: (email: string, todoId: string, update: { title?: string; done?: boolean }) =>
+    request<Todo>(email, `/api/todos/${todoId}`, {
+      method: "PATCH",
+      body: JSON.stringify(update),
+    }),
+
+  deleteTodo: (email: string, todoId: string) =>
+    request<void>(email, `/api/todos/${todoId}`, { method: "DELETE" }),
+
+  listExtracurriculars: (email: string) =>
+    request<Extracurricular[]>(email, "/api/extracurriculars"),
+
+  createExtracurricular: (email: string, title: string, content: string | null) =>
+    request<Extracurricular>(email, "/api/extracurriculars", {
+      method: "POST",
+      body: JSON.stringify({ title, content }),
+    }),
+
+  updateExtracurricular: (
+    email: string,
+    id: string,
+    update: { title?: string; content?: string | null }
+  ) =>
+    request<Extracurricular>(email, `/api/extracurriculars/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(update),
+    }),
+
+  deleteExtracurricular: (email: string, id: string) =>
+    request<void>(email, `/api/extracurriculars/${id}`, { method: "DELETE" }),
 };

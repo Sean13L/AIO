@@ -6,6 +6,8 @@ import { resolveUser } from "./middleware/resolveUser.js";
 import { coursesRouter } from "./routes/courses.js";
 import { itemsRouter } from "./routes/items.js";
 import { lecturesRouter } from "./routes/lectures.js";
+import { todosRouter } from "./routes/todos.js";
+import { extracurricularsRouter } from "./routes/extracurriculars.js";
 import { calendarFeedRouter } from "./routes/calendarFeed.js";
 import { calendarSyncTargetsRouter } from "./routes/calendarSyncTargets.js";
 import { calendarPublicRouter } from "./routes/calendarPublic.js";
@@ -28,6 +30,8 @@ export function createApp() {
     coursesRouter,
     itemsRouter,
     lecturesRouter,
+    todosRouter,
+    extracurricularsRouter,
     calendarFeedRouter,
     calendarSyncTargetsRouter
   );
