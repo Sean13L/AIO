@@ -11,14 +11,14 @@ import type {
   Todo,
 } from "./types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
-
-async function request<T>(email: string, path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
+// Same-origin relative paths now that the API lives in this Next.js app —
+// the session cookie rides along automatically, no more manually-typed
+// email / X-User-Email header.
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(path, {
     ...init,
     headers: {
       "Content-Type": "application/json",
-      "X-User-Email": email,
       ...(init?.headers ?? {}),
     },
   });
@@ -60,65 +60,56 @@ export interface ItemUpdateInput {
 }
 
 export const api = {
-  listCourses: (email: string) => request<Course[]>(email, "/api/courses"),
+  listCourses: () => request<Course[]>("/api/courses"),
 
-  createCourse: (email: string, input: CourseInput) =>
-    request<Course>(email, "/api/courses", {
+  createCourse: (input: CourseInput) =>
+    request<Course>("/api/courses", {
       method: "POST",
       body: JSON.stringify(input),
     }),
 
-  getCourse: (email: string, courseId: string) =>
-    request<Course>(email, `/api/courses/${courseId}`),
+  getCourse: (courseId: string) => request<Course>(`/api/courses/${courseId}`),
 
-  deleteCourse: (email: string, courseId: string) =>
-    request<void>(email, `/api/courses/${courseId}`, { method: "DELETE" }),
+  deleteCourse: (courseId: string) =>
+    request<void>(`/api/courses/${courseId}`, { method: "DELETE" }),
 
-  listItems: (email: string, courseId: string) =>
-    request<Item[]>(email, `/api/courses/${courseId}/items`),
+  listItems: (courseId: string) => request<Item[]>(`/api/courses/${courseId}/items`),
 
-  listAllItems: (email: string) => request<ItemWithCourse[]>(email, "/api/items"),
+  listAllItems: () => request<ItemWithCourse[]>("/api/items"),
 
-  createItem: (email: string, courseId: string, input: ItemCreateInput) =>
-    request<Item>(email, `/api/courses/${courseId}/items`, {
+  createItem: (courseId: string, input: ItemCreateInput) =>
+    request<Item>(`/api/courses/${courseId}/items`, {
       method: "POST",
       body: JSON.stringify(input),
     }),
 
-  updateItem: (email: string, itemId: string, update: ItemUpdateInput) =>
-    request<Item>(email, `/api/items/${itemId}`, {
+  updateItem: (itemId: string, update: ItemUpdateInput) =>
+    request<Item>(`/api/items/${itemId}`, {
       method: "PATCH",
       body: JSON.stringify(update),
     }),
 
-  deleteItem: (email: string, itemId: string) =>
-    request<void>(email, `/api/items/${itemId}`, { method: "DELETE" }),
+  deleteItem: (itemId: string) => request<void>(`/api/items/${itemId}`, { method: "DELETE" }),
 
-  getCalendarFeed: (email: string) =>
-    request<{ url: string }>(email, "/api/calendar-feed"),
+  getCalendarFeed: () => request<{ url: string }>("/api/calendar-feed"),
 
-  listLectures: (email: string, courseId: string) =>
-    request<Lecture[]>(email, `/api/courses/${courseId}/lectures`),
+  listLectures: (courseId: string) => request<Lecture[]>(`/api/courses/${courseId}/lectures`),
 
-  listAllLectures: (email: string) => request<LectureWithCourse[]>(email, "/api/lectures"),
+  listAllLectures: () => request<LectureWithCourse[]>("/api/lectures"),
 
-  getLecture: (email: string, lectureId: string) =>
-    request<Lecture>(email, `/api/lectures/${lectureId}`),
+  getLecture: (lectureId: string) => request<Lecture>(`/api/lectures/${lectureId}`),
 
-  generateLecturePreview: (email: string, lectureId: string) =>
-    request<Lecture>(email, `/api/lectures/${lectureId}/generate-preview`, {
-      method: "POST",
-    }),
+  generateLecturePreview: (lectureId: string) =>
+    request<Lecture>(`/api/lectures/${lectureId}/generate-preview`, { method: "POST" }),
 
   // Bypasses the shared `request()` helper: file uploads need the browser
   // to set its own multipart Content-Type boundary, not our JSON default.
-  uploadLectureSlides: async (email: string, lectureId: string, file: File): Promise<Lecture> => {
+  uploadLectureSlides: async (lectureId: string, file: File): Promise<Lecture> => {
     const formData = new FormData();
     formData.append("slides", file);
 
-    const res = await fetch(`${API_URL}/api/lectures/${lectureId}/slides`, {
+    const res = await fetch(`/api/lectures/${lectureId}/slides`, {
       method: "POST",
-      headers: { "X-User-Email": email },
       body: formData,
     });
 
@@ -129,53 +120,65 @@ export const api = {
     return res.json();
   },
 
-  listSyncTargets: (email: string) =>
-    request<CalendarSyncTarget[]>(email, "/api/calendar-feed/sync-targets"),
+  uploadSyllabus: async (input: { file: File } | { text: string }): Promise<{
+    courseId: string;
+    syllabusId: string;
+    itemsCreated: number;
+    lecturesCreated: number;
+  }> => {
+    const formData = new FormData();
+    if ("file" in input) {
+      formData.append("file", input.file);
+    } else {
+      formData.append("text", input.text);
+    }
 
-  addSyncTarget: (email: string, label: string) =>
-    request<CalendarSyncTarget>(email, "/api/calendar-feed/sync-targets", {
+    const res = await fetch("/api/syllabi", { method: "POST", body: formData });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(typeof body.error === "string" ? body.error : "Syllabus upload failed");
+    }
+    return res.json();
+  },
+
+  listSyncTargets: () => request<CalendarSyncTarget[]>("/api/calendar-feed/sync-targets"),
+
+  addSyncTarget: (label: string) =>
+    request<CalendarSyncTarget>("/api/calendar-feed/sync-targets", {
       method: "POST",
       body: JSON.stringify({ label }),
     }),
 
-  removeSyncTarget: (email: string, targetId: string) =>
-    request<void>(email, `/api/calendar-feed/sync-targets/${targetId}`, {
-      method: "DELETE",
-    }),
+  removeSyncTarget: (targetId: string) =>
+    request<void>(`/api/calendar-feed/sync-targets/${targetId}`, { method: "DELETE" }),
 
-  listTodos: (email: string) => request<Todo[]>(email, "/api/todos"),
+  listTodos: () => request<Todo[]>("/api/todos"),
 
-  createTodo: (email: string, title: string) =>
-    request<Todo>(email, "/api/todos", { method: "POST", body: JSON.stringify({ title }) }),
+  createTodo: (title: string) =>
+    request<Todo>("/api/todos", { method: "POST", body: JSON.stringify({ title }) }),
 
-  updateTodo: (email: string, todoId: string, update: { title?: string; done?: boolean }) =>
-    request<Todo>(email, `/api/todos/${todoId}`, {
+  updateTodo: (todoId: string, update: { title?: string; done?: boolean }) =>
+    request<Todo>(`/api/todos/${todoId}`, {
       method: "PATCH",
       body: JSON.stringify(update),
     }),
 
-  deleteTodo: (email: string, todoId: string) =>
-    request<void>(email, `/api/todos/${todoId}`, { method: "DELETE" }),
+  deleteTodo: (todoId: string) => request<void>(`/api/todos/${todoId}`, { method: "DELETE" }),
 
-  listExtracurriculars: (email: string) =>
-    request<Extracurricular[]>(email, "/api/extracurriculars"),
+  listExtracurriculars: () => request<Extracurricular[]>("/api/extracurriculars"),
 
-  createExtracurricular: (email: string, title: string, content: string | null) =>
-    request<Extracurricular>(email, "/api/extracurriculars", {
+  createExtracurricular: (title: string, content: string | null) =>
+    request<Extracurricular>("/api/extracurriculars", {
       method: "POST",
       body: JSON.stringify({ title, content }),
     }),
 
-  updateExtracurricular: (
-    email: string,
-    id: string,
-    update: { title?: string; content?: string | null }
-  ) =>
-    request<Extracurricular>(email, `/api/extracurriculars/${id}`, {
+  updateExtracurricular: (id: string, update: { title?: string; content?: string | null }) =>
+    request<Extracurricular>(`/api/extracurriculars/${id}`, {
       method: "PATCH",
       body: JSON.stringify(update),
     }),
 
-  deleteExtracurricular: (email: string, id: string) =>
-    request<void>(email, `/api/extracurriculars/${id}`, { method: "DELETE" }),
+  deleteExtracurricular: (id: string) =>
+    request<void>(`/api/extracurriculars/${id}`, { method: "DELETE" }),
 };

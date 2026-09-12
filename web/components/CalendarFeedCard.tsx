@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useCurrentUser } from "@/lib/CurrentUserContext";
+import { useAuthGate } from "@/lib/useAuthGate";
 import { api } from "@/lib/api";
 import type { CalendarSyncTarget } from "@/lib/types";
 
 export function CalendarFeedCard() {
-  const { email } = useCurrentUser();
+  const { email } = useAuthGate();
   const [url, setUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +17,7 @@ export function CalendarFeedCard() {
   async function refreshTargets() {
     if (!email) return;
     try {
-      setTargets(await api.listSyncTargets(email));
+      setTargets(await api.listSyncTargets());
     } catch (err) {
       setError((err as Error).message);
     }
@@ -26,7 +26,7 @@ export function CalendarFeedCard() {
   useEffect(() => {
     if (!email) return;
     api
-      .getCalendarFeed(email)
+      .getCalendarFeed()
       .then((res) => setUrl(res.url))
       .catch((err) => setError((err as Error).message));
     refreshTargets();
@@ -51,7 +51,7 @@ export function CalendarFeedCard() {
     if (!email || !label.trim()) return;
     setAdding(true);
     try {
-      await api.addSyncTarget(email, label.trim());
+      await api.addSyncTarget(label.trim());
       setLabel("");
       await refreshTargets();
     } catch (err) {
@@ -64,7 +64,7 @@ export function CalendarFeedCard() {
   async function handleRemoveTarget(targetId: string) {
     if (!email) return;
     try {
-      await api.removeSyncTarget(email, targetId);
+      await api.removeSyncTarget(targetId);
       await refreshTargets();
     } catch (err) {
       setError((err as Error).message);

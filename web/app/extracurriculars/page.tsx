@@ -1,12 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useCurrentUser } from "@/lib/CurrentUserContext";
+import { useAuthGate } from "@/lib/useAuthGate";
 import { api } from "@/lib/api";
 import type { Extracurricular } from "@/lib/types";
 
 export default function ExtracurricularsPage() {
-  const { email, ready } = useCurrentUser();
+  const { email, ready } = useAuthGate();
   const [items, setItems] = useState<Extracurricular[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,7 +23,7 @@ export default function ExtracurricularsPage() {
     if (!email) return;
     try {
       setError(null);
-      setItems(await api.listExtracurriculars(email));
+      setItems(await api.listExtracurriculars());
     } catch (err) {
       setError((err as Error).message);
     }
@@ -38,7 +39,7 @@ export default function ExtracurricularsPage() {
     if (!email || !title.trim()) return;
     setSubmitting(true);
     try {
-      await api.createExtracurricular(email, title.trim(), content.trim() || null);
+      await api.createExtracurricular(title.trim(), content.trim() || null);
       setTitle("");
       setContent("");
       await refresh();
@@ -58,7 +59,7 @@ export default function ExtracurricularsPage() {
   async function saveEdit(id: string) {
     if (!email) return;
     try {
-      await api.updateExtracurricular(email, id, {
+      await api.updateExtracurricular(id, {
         title: editTitle.trim(),
         content: editContent.trim() || null,
       });
@@ -73,7 +74,7 @@ export default function ExtracurricularsPage() {
     if (!email) return;
     if (!confirm("Delete this entry?")) return;
     try {
-      await api.deleteExtracurricular(email, id);
+      await api.deleteExtracurricular(id);
       await refresh();
     } catch (err) {
       setError((err as Error).message);
@@ -84,7 +85,9 @@ export default function ExtracurricularsPage() {
   if (!email) {
     return (
       <div className="card">
-        <p>Enter your email above to see your extracurriculars.</p>
+        <p>
+          <Link href="/auth/signin">Sign in</Link> to see your extracurriculars.
+        </p>
       </div>
     );
   }

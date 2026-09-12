@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { use, useEffect, useRef, useState } from "react";
-import { useCurrentUser } from "@/lib/CurrentUserContext";
+import { useAuthGate } from "@/lib/useAuthGate";
 import { api } from "@/lib/api";
 import { formatDue } from "@/lib/dates";
 import type { Lecture } from "@/lib/types";
@@ -19,7 +19,7 @@ export default function LecturePage({
   params: Promise<{ id: string; lectureId: string }>;
 }) {
   const { id: courseId, lectureId } = use(params);
-  const { email, ready } = useCurrentUser();
+  const { email, ready } = useAuthGate();
   const [lecture, setLecture] = useState<Lecture | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -30,7 +30,7 @@ export default function LecturePage({
     if (!email) return;
     try {
       setError(null);
-      setLecture(await api.getLecture(email, lectureId));
+      setLecture(await api.getLecture(lectureId));
     } catch (err) {
       setError((err as Error).message);
     }
@@ -47,7 +47,7 @@ export default function LecturePage({
     if (!email || !file) return;
     setUploading(true);
     try {
-      await api.uploadLectureSlides(email, lectureId, file);
+      await api.uploadLectureSlides(lectureId, file);
       if (fileInputRef.current) fileInputRef.current.value = "";
       await refresh();
     } catch (err) {
@@ -61,7 +61,7 @@ export default function LecturePage({
     if (!email) return;
     setGenerating(true);
     try {
-      await api.generateLecturePreview(email, lectureId);
+      await api.generateLecturePreview(lectureId);
       await refresh();
     } catch (err) {
       setError((err as Error).message);
@@ -74,7 +74,9 @@ export default function LecturePage({
   if (!email) {
     return (
       <div className="card">
-        <p>Enter your email above to view this lecture.</p>
+        <p>
+          <Link href="/auth/signin">Sign in</Link> to view this lecture.
+        </p>
       </div>
     );
   }

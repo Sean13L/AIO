@@ -4,5 +4,6 @@ dist/
 .env.local
 *.log
 server/uploads/
+web/uploads/
 web/.next/
 *.tsbuildinfo

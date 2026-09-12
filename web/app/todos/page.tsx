@@ -1,12 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useCurrentUser } from "@/lib/CurrentUserContext";
+import { useAuthGate } from "@/lib/useAuthGate";
 import { api } from "@/lib/api";
 import type { Todo } from "@/lib/types";
 
 export default function TodosPage() {
-  const { email, ready } = useCurrentUser();
+  const { email, ready } = useAuthGate();
   const [todos, setTodos] = useState<Todo[] | null>(null);
   const [title, setTitle] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -16,7 +17,7 @@ export default function TodosPage() {
     if (!email) return;
     try {
       setError(null);
-      setTodos(await api.listTodos(email));
+      setTodos(await api.listTodos());
     } catch (err) {
       setError((err as Error).message);
     }
@@ -32,7 +33,7 @@ export default function TodosPage() {
     if (!email || !title.trim()) return;
     setSubmitting(true);
     try {
-      await api.createTodo(email, title.trim());
+      await api.createTodo(title.trim());
       setTitle("");
       await refresh();
     } catch (err) {
@@ -45,7 +46,7 @@ export default function TodosPage() {
   async function toggleDone(todo: Todo) {
     if (!email) return;
     try {
-      await api.updateTodo(email, todo.id, { done: !todo.done });
+      await api.updateTodo(todo.id, { done: !todo.done });
       await refresh();
     } catch (err) {
       setError((err as Error).message);
@@ -55,7 +56,7 @@ export default function TodosPage() {
   async function handleDelete(todoId: string) {
     if (!email) return;
     try {
-      await api.deleteTodo(email, todoId);
+      await api.deleteTodo(todoId);
       await refresh();
     } catch (err) {
       setError((err as Error).message);
@@ -66,7 +67,9 @@ export default function TodosPage() {
   if (!email) {
     return (
       <div className="card">
-        <p>Enter your email above to see your to-do list.</p>
+        <p>
+          <Link href="/auth/signin">Sign in</Link> to see your to-do list.
+        </p>
       </div>
     );
   }

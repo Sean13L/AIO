@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useCurrentUser } from "@/lib/CurrentUserContext";
+import { useAuthGate } from "@/lib/useAuthGate";
 import { api } from "@/lib/api";
 import type { Course } from "@/lib/types";
 import { CalendarFeedCard } from "@/components/CalendarFeedCard";
 
 export default function CoursesPage() {
-  const { email, ready } = useCurrentUser();
+  const { email, ready } = useAuthGate();
   const [courses, setCourses] = useState<Course[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,7 +21,7 @@ export default function CoursesPage() {
     if (!email) return;
     try {
       setError(null);
-      setCourses(await api.listCourses(email));
+      setCourses(await api.listCourses());
     } catch (err) {
       setError((err as Error).message);
     }
@@ -37,7 +37,7 @@ export default function CoursesPage() {
     if (!email || !courseCode.trim() || !courseName.trim()) return;
     setSubmitting(true);
     try {
-      await api.createCourse(email, {
+      await api.createCourse({
         course_code: courseCode.trim(),
         course_name: courseName.trim(),
         semester: semester.trim() || null,
@@ -57,7 +57,7 @@ export default function CoursesPage() {
     if (!email) return;
     if (!confirm("Delete this course and everything in it (items, lectures, syllabi)?")) return;
     try {
-      await api.deleteCourse(email, courseId);
+      await api.deleteCourse(courseId);
       await refresh();
     } catch (err) {
       setError((err as Error).message);
@@ -69,7 +69,9 @@ export default function CoursesPage() {
   if (!email) {
     return (
       <div className="card">
-        <p>Enter your email above to see your courses.</p>
+        <p>
+          <Link href="/auth/signin">Sign in</Link> to see your courses.
+        </p>
       </div>
     );
   }
@@ -120,8 +122,8 @@ export default function CoursesPage() {
         <p className="muted">Loading…</p>
       ) : courses.length === 0 ? (
         <p className="muted">
-          No courses yet. Add one above, or run <code>npm run ingest</code> in{" "}
-          <code>server/</code> to import a syllabus.
+          No courses yet. Add one above, or <Link href="/upload">upload a syllabus</Link> to
+          import one automatically.
         </p>
       ) : (
         <ul className="course-list">

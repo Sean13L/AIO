@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useCurrentUser } from "@/lib/CurrentUserContext";
+import { useAuthGate } from "@/lib/useAuthGate";
 import { api } from "@/lib/api";
 import type { ItemWithCourse, LectureWithCourse } from "@/lib/types";
 
@@ -34,7 +34,7 @@ function hmUTC(iso: string): string {
 }
 
 export default function CalendarPage() {
-  const { email, ready } = useCurrentUser();
+  const { email, ready } = useAuthGate();
   const [items, setItems] = useState<ItemWithCourse[] | null>(null);
   const [lectures, setLectures] = useState<LectureWithCourse[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +46,7 @@ export default function CalendarPage() {
   useEffect(() => {
     if (!email) return;
     setError(null);
-    Promise.all([api.listAllItems(email), api.listAllLectures(email)])
+    Promise.all([api.listAllItems(), api.listAllLectures()])
       .then(([i, l]) => {
         setItems(i);
         setLectures(l);
@@ -73,7 +73,9 @@ export default function CalendarPage() {
   if (!email) {
     return (
       <div className="card">
-        <p>Enter your email above to see your calendar.</p>
+        <p>
+          <Link href="/auth/signin">Sign in</Link> to see your calendar.
+        </p>
       </div>
     );
   }

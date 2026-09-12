@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
-import { useCurrentUser } from "@/lib/CurrentUserContext";
+import { useAuthGate } from "@/lib/useAuthGate";
 import { api, type ItemUpdateInput } from "@/lib/api";
 import {
   ITEM_STATUSES,
@@ -43,7 +43,7 @@ const emptyForm: ItemFormState = {
 
 export default function CourseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: courseId } = use(params);
-  const { email, ready } = useCurrentUser();
+  const { email, ready } = useAuthGate();
   const [course, setCourse] = useState<Course | null>(null);
   const [items, setItems] = useState<Item[] | null>(null);
   const [lectures, setLectures] = useState<Lecture[] | null>(null);
@@ -59,9 +59,9 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
     try {
       setError(null);
       const [courseData, itemsData, lecturesData] = await Promise.all([
-        api.getCourse(email, courseId),
-        api.listItems(email, courseId),
-        api.listLectures(email, courseId),
+        api.getCourse(courseId),
+        api.listItems(courseId),
+        api.listLectures(courseId),
       ]);
       setCourse(courseData);
       setItems(itemsData);
@@ -81,7 +81,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
     if (!email || !form.name.trim() || !form.due_date) return;
     setSubmitting(true);
     try {
-      await api.createItem(email, courseId, {
+      await api.createItem(courseId, {
         name: form.name.trim(),
         type: form.type,
         due_date: form.due_date,
@@ -123,7 +123,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
         weight: editForm.weight.trim() || null,
         notes: editForm.notes.trim() || null,
       };
-      await api.updateItem(email, itemId, update);
+      await api.updateItem(itemId, update);
       setEditingId(null);
       await refresh();
     } catch (err) {
@@ -134,7 +134,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
   async function handleStatusChange(item: Item, status: ItemStatus) {
     if (!email) return;
     try {
-      await api.updateItem(email, item.id, { status });
+      await api.updateItem(item.id, { status });
       await refresh();
     } catch (err) {
       setError((err as Error).message);
@@ -145,7 +145,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
     if (!email) return;
     if (!confirm("Delete this item?")) return;
     try {
-      await api.deleteItem(email, itemId);
+      await api.deleteItem(itemId);
       await refresh();
     } catch (err) {
       setError((err as Error).message);
@@ -156,7 +156,9 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
   if (!email) {
     return (
       <div className="card">
-        <p>Enter your email above to view this course.</p>
+        <p>
+          <Link href="/auth/signin">Sign in</Link> to view this course.
+        </p>
       </div>
     );
   }
@@ -372,8 +374,8 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
         <p className="muted">Loading…</p>
       ) : lectures.length === 0 ? (
         <p className="muted">
-          No lectures yet — these come from the syllabus&apos;s week-by-week schedule once
-          imported (see <code>npm run ingest</code> in <code>server/</code>).
+          No lectures yet — these come from the syllabus&apos;s week-by-week schedule once you{" "}
+          <Link href="/upload">upload one</Link>.
         </p>
       ) : (
         <table>

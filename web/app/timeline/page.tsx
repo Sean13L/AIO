@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useCurrentUser } from "@/lib/CurrentUserContext";
+import { useAuthGate } from "@/lib/useAuthGate";
 import { api } from "@/lib/api";
 import { formatDue, monthLabel } from "@/lib/dates";
 import { ITEM_STATUSES, type ItemStatus, type ItemWithCourse } from "@/lib/types";
 
 export default function TimelinePage() {
-  const { email, ready } = useCurrentUser();
+  const { email, ready } = useAuthGate();
   const [items, setItems] = useState<ItemWithCourse[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,7 +16,7 @@ export default function TimelinePage() {
     if (!email) return;
     try {
       setError(null);
-      const data = await api.listAllItems(email);
+      const data = await api.listAllItems();
       setItems([...data].sort((a, b) => a.due_at.localeCompare(b.due_at)));
     } catch (err) {
       setError((err as Error).message);
@@ -31,7 +31,7 @@ export default function TimelinePage() {
   async function handleStatusChange(item: ItemWithCourse, status: ItemStatus) {
     if (!email) return;
     try {
-      await api.updateItem(email, item.id, { status });
+      await api.updateItem(item.id, { status });
       await refresh();
     } catch (err) {
       setError((err as Error).message);
@@ -42,7 +42,9 @@ export default function TimelinePage() {
   if (!email) {
     return (
       <div className="card">
-        <p>Enter your email above to see your timeline.</p>
+        <p>
+          <Link href="/auth/signin">Sign in</Link> to see your timeline.
+        </p>
       </div>
     );
   }

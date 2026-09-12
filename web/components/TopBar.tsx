@@ -1,16 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useCurrentUser } from "@/lib/CurrentUserContext";
+import { signOut, useSession } from "next-auth/react";
 
 export function TopBar() {
-  const { email, setEmail, ready } = useCurrentUser();
-  const [draft, setDraft] = useState(email);
-
-  useEffect(() => {
-    if (ready) setDraft(email);
-  }, [ready, email]);
+  const { data: session, status } = useSession();
 
   return (
     <header className="topbar">
@@ -25,26 +19,24 @@ export function TopBar() {
           <Link href="/board">Board</Link>
           <Link href="/todos">To Do</Link>
           <Link href="/extracurriculars">Extracurriculars</Link>
+          <Link href="/upload">Upload syllabus</Link>
         </nav>
       </div>
-      {ready && (
-        <form
-          className="user-form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setEmail(draft.trim());
-          }}
-        >
-          <input
-            type="email"
-            placeholder="you@example.com"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-          />
-          <button type="submit">Use this account</button>
-          {email && <span className="current-user">signed in as {email}</span>}
-        </form>
-      )}
+      <div className="user-form">
+        {status === "authenticated" && session.user?.email && (
+          <>
+            <span className="current-user">signed in as {session.user.email}</span>
+            <button className="secondary" onClick={() => signOut({ callbackUrl: "/" })}>
+              Sign out
+            </button>
+          </>
+        )}
+        {status === "unauthenticated" && (
+          <Link href="/auth/signin">
+            <button type="button">Sign in</button>
+          </Link>
+        )}
+      </div>
     </header>
   );
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useCurrentUser } from "@/lib/CurrentUserContext";
+import { useAuthGate } from "@/lib/useAuthGate";
 import { api } from "@/lib/api";
 import { formatDue } from "@/lib/dates";
 import { ITEM_STATUSES, type ItemStatus, type ItemWithCourse } from "@/lib/types";
@@ -14,7 +14,7 @@ const COLUMN_LABELS: Record<ItemStatus, string> = {
 };
 
 export default function BoardPage() {
-  const { email, ready } = useCurrentUser();
+  const { email, ready } = useAuthGate();
   const [items, setItems] = useState<ItemWithCourse[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<ItemStatus | null>(null);
@@ -23,7 +23,7 @@ export default function BoardPage() {
     if (!email) return;
     try {
       setError(null);
-      setItems(await api.listAllItems(email));
+      setItems(await api.listAllItems());
     } catch (err) {
       setError((err as Error).message);
     }
@@ -37,7 +37,7 @@ export default function BoardPage() {
   async function moveItem(itemId: string, status: ItemStatus) {
     if (!email) return;
     try {
-      await api.updateItem(email, itemId, { status });
+      await api.updateItem(itemId, { status });
       await refresh();
     } catch (err) {
       setError((err as Error).message);
@@ -48,7 +48,9 @@ export default function BoardPage() {
   if (!email) {
     return (
       <div className="card">
-        <p>Enter your email above to see your board.</p>
+        <p>
+          <Link href="/auth/signin">Sign in</Link> to see your board.
+        </p>
       </div>
     );
   }
