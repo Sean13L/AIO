@@ -57,6 +57,11 @@ a {
   color: #2454ff;
 }
 
+.nav-links a.active {
+  color: #2454ff;
+  font-weight: 600;
+}
+
 .user-form {
   display: flex;
   align-items: center;
@@ -194,12 +199,17 @@ form.inline label {
   text-align: center;
 }
 
+.calendar-grid-scroll {
+  overflow-x: auto;
+}
+
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 1px;
   background: #e2e2e2;
   border: 1px solid #e2e2e2;
+  min-width: 700px;
 }
 
 .calendar-weekday {
@@ -284,9 +294,12 @@ form.inline label {
   color: #999;
 }
 
+.board-scroll {
+  overflow-x: auto;
+}
+
 .board {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
   gap: 1rem;
   margin-top: 1rem;
 }
@@ -297,6 +310,7 @@ form.inline label {
   border-radius: 8px;
   padding: 0.75rem;
   min-height: 200px;
+  flex: 1 0 240px;
 }
 
 .board-column.drag-over {

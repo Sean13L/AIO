@@ -1,10 +1,22 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
+
+const NAV_LINKS = [
+  { href: "/", label: "Courses" },
+  { href: "/calendar", label: "Calendar" },
+  { href: "/timeline", label: "Timeline" },
+  { href: "/board", label: "Board" },
+  { href: "/todos", label: "To Do" },
+  { href: "/extracurriculars", label: "Extracurriculars" },
+  { href: "/upload", label: "Upload syllabus" },
+];
 
 export function TopBar() {
   const { data: session, status } = useSession();
+  const pathname = usePathname();
 
   return (
     <header className="topbar">
@@ -13,13 +25,11 @@ export function TopBar() {
           AI Syllabus Assistant
         </Link>
         <nav className="nav-links">
-          <Link href="/">Courses</Link>
-          <Link href="/calendar">Calendar</Link>
-          <Link href="/timeline">Timeline</Link>
-          <Link href="/board">Board</Link>
-          <Link href="/todos">To Do</Link>
-          <Link href="/extracurriculars">Extracurriculars</Link>
-          <Link href="/upload">Upload syllabus</Link>
+          {NAV_LINKS.map(({ href, label }) => (
+            <Link key={href} href={href} className={pathname === href ? "active" : undefined}>
+              {label}
+            </Link>
+          ))}
         </nav>
       </div>
       <div className="user-form">

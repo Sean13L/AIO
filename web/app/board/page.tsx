@@ -62,6 +62,7 @@ export default function BoardPage() {
       <p className="muted">Drag a card to a column, or use its status dropdown.</p>
       {error && <p className="error">{error}</p>}
 
+      <div className="board-scroll">
       <div className="board">
         {ITEM_STATUSES.map((status) => (
           <div
@@ -108,6 +109,7 @@ export default function BoardPage() {
               ))}
           </div>
         ))}
+      </div>
       </div>
     </div>
   );

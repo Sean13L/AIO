@@ -130,6 +130,7 @@ export default function CalendarPage() {
       {items === null || lectures === null ? (
         <p className="muted">Loading…</p>
       ) : (
+        <div className="calendar-grid-scroll">
         <div className="calendar-grid">
           {WEEKDAY_LABELS.map((w) => (
             <div key={w} className="calendar-weekday">
@@ -169,6 +170,7 @@ export default function CalendarPage() {
               </div>
             );
           })}
+        </div>
         </div>
       )}
     </div>
