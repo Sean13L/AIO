@@ -9,7 +9,11 @@
 // CLAUDE.md): R2 requires a credit card on file to enable even on its free
 // tier. Vercel Blob is free on Hobby with no card, and needs no separate
 // account since the app is already deployed on Vercel — connecting a Blob
-// store to the project sets BLOB_READ_WRITE_TOKEN automatically.
+// store to the project wires up access automatically. Newer projects get
+// OIDC-based auth (BLOB_STORE_ID + an auto-injected identity token) instead
+// of a static BLOB_READ_WRITE_TOKEN — the @vercel/blob SDK checks for OIDC
+// credentials first and falls back to the token var, so either is fine as
+// long as one of the two is present.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -21,7 +25,7 @@ function isSafeFilename(filename: string): boolean {
 }
 
 function blobConfigured(): boolean {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+  return Boolean(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID);
 }
 
 function blobPathname(namespace: Namespace, filename: string): string {
