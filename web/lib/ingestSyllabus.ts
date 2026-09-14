@@ -4,6 +4,7 @@ import { extractRawText, type SyllabusInput } from "./extraction/parseFile";
 import { extractSyllabus } from "./extraction/extractSyllabus";
 import type { SyllabusExtraction } from "./extraction/schema";
 import { toTimestamp } from "./timestamp";
+import { syncUserCalendarToGoogle } from "./calendar/googleCalendar";
 
 export interface IngestSyllabusParams {
   userId: string;
@@ -27,7 +28,7 @@ export async function ingestSyllabus({
   const rawText = await extractRawText(input);
   const extraction = await extractSyllabus({ syllabusText: rawText });
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const existingCourse = await tx.courses.findFirst({
       where: {
         user_id: userId,
@@ -88,4 +89,9 @@ export async function ingestSyllabus({
       extraction,
     };
   });
+
+  // Outside the transaction (it's a network call, not a DB write) and
+  // best-effort — see googleCalendar.ts.
+  await syncUserCalendarToGoogle(userId);
+  return result;
 }

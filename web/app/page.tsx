@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useAuthGate } from "@/lib/useAuthGate";
 import { api } from "@/lib/api";
 import type { Course } from "@/lib/types";
@@ -81,7 +81,9 @@ export default function CoursesPage() {
       <h1>Courses</h1>
       {error && <p className="error">{error}</p>}
 
-      <CalendarFeedCard />
+      <Suspense fallback={null}>
+        <CalendarFeedCard />
+      </Suspense>
 
       <div className="card">
         <h2>Add a course</h2>

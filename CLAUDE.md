@@ -26,6 +26,7 @@ An app that uses AI to automatically ingest course syllabuses, extract the infor
   - Trade-off to flag for the user: subscribed feeds refresh on the calendar provider's own polling schedule (Google Calendar typically checks every several hours, not instantly), so it's *near-real-time*, not instant.
   - If instant sync matters more than universal support, the alternative is a direct **Google Calendar API** (OAuth) push integration — instant updates, but Google-only and requires the user to connect their account.
   - Reasonable default: ship the `.ics` feed first (works everywhere, no auth needed), and treat direct Google API push as a v2 enhancement if instant sync turns out to matter.
+  - **Shipped, owner-only:** the account owner can connect their own Google Calendar (`app/api/calendar-feed/google/authorize` + `.../callback`, `lib/calendar/googleCalendar.ts`) for instant push of their own items/lectures. A shared recipient (parent, study partner) still gets the `.ics` link only — each recipient OAuth-connecting their own calendar was scoped out as a bigger follow-up (would need an auth flow for people with no account in the app).
 - Each calendar event should link back to the originating assignment/quiz record, not just exist as a bare event.
 - **Lecture events:** scheduled lectures also appear on the calendar as timed events (they have a fixed class slot, so they're never all-day). Each lecture event links to that session's dedicated pre-review page — see Pre-Lecture Content Review below.
 
@@ -77,13 +78,13 @@ A single Next.js app (`web/`) — the earlier `worker/` + Docker Compose hybrid 
 - **Database:** Postgres — Neon in production (real free tier, no expiration), a local native install for dev. One `schema.prisma`, no more duplication.
 - **File storage** (uploaded syllabi + lecture slides): Vercel Blob via `web/lib/storage.ts`. Switched from the originally planned Cloudflare R2 because R2 requires a credit card on file to enable even within its free tier, while Blob is free on Vercel's Hobby plan with no card and no separate account — the project already deploys on Vercel, so connecting a Blob store just sets `BLOB_READ_WRITE_TOKEN` automatically. Falls back to local disk under `web/.data/` when that env var isn't set, so local dev/CI need no external service — same pattern as the mock syllabus extractor and mock preview generator below.
 - **Lecture-preview scheduler:** was an always-on polling loop in `worker/`; now `web/app/api/cron/generate-previews/route.ts`, triggered by Vercel Cron (see `vercel.json`) since Vercel's free Hobby tier only allows daily cron — acceptable given `PREVIEW_LEAD_HOURS` defaults to 48h.
-- **Calendar sync:** `.ics` subscription feed, shipped (per-user token URL, multiple sync-target labels supported). Direct Google Calendar OAuth push is *not yet built* — schema has a slot for it (`sync_target_type`, `google_oauth_token`) but the route only accepts `ics_subscriber` today.
+- **Calendar sync:** `.ics` subscription feed, shipped (per-user token URL, multiple sync-target labels supported). Direct Google Calendar OAuth push, owner-only, also shipped — a separate OAuth flow from NextAuth sign-in (its own authorize/callback routes, `calendar.events` scope, refresh-token storage on `calendar_sync_targets`), since sign-in shouldn't require calendar consent. Requires `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` (same vars as Google sign-in) plus the Calendar API enabled on that Google Cloud project and a second redirect URI registered — see `.env.example`.
 - **CI:** GitHub Actions (`.github/workflows/ci.yml`) — typecheck/test/build against a real Postgres service container.
 - **Hosting:** Vercel (free Hobby tier, includes Blob storage) + Neon (free). Chosen after checking current 2026 pricing — Railway/Render/Fly.io no longer have usable free tiers for an always-on container with persistent storage, which is what made collapsing out of the worker/ split the right call rather than just paying to keep it.
 
 ## Open Questions — resolved
 1. Deadlines/Assignments: consolidated into one `items` table with a `source` field (auto-extracted vs. manual), as recommended — not the two-database Notion split.
-2. Multi-user calendar sync: went with multiple `.ics` feed recipients (read-only, link-based) as the simple first cut. Direct OAuth push per recipient is still open — see Build Order step 6 below.
+2. Multi-user calendar sync: went with multiple `.ics` feed recipients (read-only, link-based) as the simple first cut, plus owner-only direct Google Calendar OAuth push (see Build Order step 6). Push for *each* recipient's own Google account (not just the owner's) is the one piece still open, if that turns out to matter.
 
 ## Build Order (suggested)
 1. Syllabus upload + AI extraction → structured course record (deadlines *and* the lecture schedule) — **done**
@@ -91,4 +92,4 @@ A single Next.js app (`web/`) — the earlier `worker/` + Docker Compose hybrid 
 3. Calendar: ship the `.ics` feed first (works everywhere, no auth needed) — **done**
 4. Notion-style views (timeline, kanban) on top of the same data — **done**
 5. Lecture pages: slide upload + syllabus-topic cross-reference → generated pre-review content, linked from the lecture's calendar event — **done**
-6. Multi-recipient calendar sync, direct Google Calendar API push (if instant sync becomes a priority) — **multi-recipient `.ics` done; direct Google push not started** (needs a real Google Cloud OAuth client ID/secret to build against)
+6. Multi-recipient calendar sync, direct Google Calendar API push (if instant sync becomes a priority) — **multi-recipient `.ics` done; owner-only direct Google push done** (per-recipient Google OAuth is the remaining v2 slice, scoped out for now)

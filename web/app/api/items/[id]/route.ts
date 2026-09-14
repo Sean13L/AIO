@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/session";
 import { itemUpdateSchema } from "@/lib/validation";
 import { toTimestamp } from "@/lib/timestamp";
+import { deleteRecordEventFromGoogle, syncUserCalendarToGoogle } from "@/lib/calendar/googleCalendar";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const userId = await getCurrentUserId();
@@ -31,6 +32,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const item = await prisma.items.findUnique({ where: { id } });
+  await syncUserCalendarToGoogle(userId);
   return NextResponse.json(item);
 }
 
@@ -45,5 +47,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   if (result.count === 0) {
     return NextResponse.json({ error: "Item not found" }, { status: 404 });
   }
+  await deleteRecordEventFromGoogle(userId, id);
   return new NextResponse(null, { status: 204 });
 }

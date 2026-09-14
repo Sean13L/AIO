@@ -1,15 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthGate } from "@/lib/useAuthGate";
 import { api } from "@/lib/api";
 import type { CalendarSyncTarget } from "@/lib/types";
 
 export function CalendarFeedCard() {
   const { email } = useAuthGate();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [url, setUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [googleStatus, setGoogleStatus] = useState<"connected" | "error" | null>(null);
   const [targets, setTargets] = useState<CalendarSyncTarget[] | null>(null);
   const [label, setLabel] = useState("");
   const [adding, setAdding] = useState(false);
@@ -32,6 +36,17 @@ export function CalendarFeedCard() {
     refreshTargets();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [email]);
+
+  // Picks up the ?google_calendar=connected|error redirect from
+  // /api/calendar-feed/google/callback, then strips it from the URL.
+  useEffect(() => {
+    const status = searchParams.get("google_calendar");
+    if (status === "connected" || status === "error") {
+      setGoogleStatus(status);
+      router.replace("/", { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   if (!email) return null;
 
@@ -71,10 +86,19 @@ export function CalendarFeedCard() {
     }
   }
 
+  const googleTarget = targets?.find((t) => t.target_type === "google_oauth") ?? null;
+  const icsTargets = targets?.filter((t) => t.target_type === "ics_subscriber") ?? [];
+
   return (
     <div className="card">
       <h2>Subscribe to your calendar</h2>
       {error && <p className="error">{error}</p>}
+      {googleStatus === "connected" && (
+        <p className="success">Google Calendar connected — your items and lectures are synced.</p>
+      )}
+      {googleStatus === "error" && (
+        <p className="error">Couldn&apos;t connect Google Calendar. Please try again.</p>
+      )}
       {url && (
         <>
           <form
@@ -102,9 +126,9 @@ export function CalendarFeedCard() {
             keep track of who has it.
           </p>
 
-          {targets && targets.length > 0 && (
+          {icsTargets.length > 0 && (
             <ul className="course-list" style={{ marginBottom: "0.75rem" }}>
-              {targets.map((target) => (
+              {icsTargets.map((target) => (
                 <li key={target.id}>
                   <span>{target.label}</span>
                   <button className="danger" onClick={() => handleRemoveTarget(target.id)}>
@@ -129,12 +153,24 @@ export function CalendarFeedCard() {
             </button>
           </form>
 
-          <p className="muted">
-            Want instant sync straight into someone&apos;s Google Calendar instead of a
-            subscribed link? That needs a Google account connection (OAuth) that
-            isn&apos;t set up yet — this app currently only supports the universal
-            subscribe-by-URL feed above.
-          </p>
+          <h3 style={{ marginBottom: "0.25rem" }}>Instant sync</h3>
+          {googleTarget ? (
+            <p className="muted" style={{ marginTop: 0 }}>
+              Connected as <strong>{googleTarget.label}</strong> — your items and lectures push
+              here automatically, no waiting on a subscribed feed to refresh.{" "}
+              <button className="danger" onClick={() => handleRemoveTarget(googleTarget.id)}>
+                Disconnect
+              </button>
+            </p>
+          ) : (
+            <p className="muted" style={{ marginTop: 0 }}>
+              Want instant sync straight into your own Google Calendar instead of waiting on a
+              subscribed feed to refresh?{" "}
+              <a href="/api/calendar-feed/google/authorize">Connect Google Calendar</a>. This
+              connects your own calendar only — a parent or study partner still uses the
+              subscribe-by-URL link above.
+            </p>
+          )}
         </>
       )}
     </div>

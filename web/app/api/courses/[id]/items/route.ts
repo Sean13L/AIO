@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/session";
 import { itemCreateSchema } from "@/lib/validation";
 import { toTimestamp } from "@/lib/timestamp";
+import { syncUserCalendarToGoogle } from "@/lib/calendar/googleCalendar";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const userId = await getCurrentUserId();
@@ -44,5 +45,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       source: "manual",
     },
   });
+  await syncUserCalendarToGoogle(userId);
   return NextResponse.json(item, { status: 201 });
 }
