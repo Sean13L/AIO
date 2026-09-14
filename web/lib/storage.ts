@@ -1,9 +1,15 @@
-// File storage for uploaded syllabi and lecture slides. Backed by Cloudflare
-// R2 (S3-compatible) in production; when R2 isn't configured, falls back to
-// local disk under web/.data/ so local dev and CI need no external service —
-// same "gracefully degrade when an external service isn't configured"
-// pattern already used by mockExtractSyllabus.ts, mockGeneratePreview.ts,
-// and the dev-email CredentialsProvider in lib/auth.ts.
+// File storage for uploaded syllabi and lecture slides. Backed by Vercel
+// Blob in production; when it isn't configured, falls back to local disk
+// under web/.data/ so local dev and CI need no external service — same
+// "gracefully degrade when an external service isn't configured" pattern
+// already used by mockExtractSyllabus.ts, mockGeneratePreview.ts, and the
+// dev-email CredentialsProvider in lib/auth.ts.
+//
+// Chosen over Cloudflare R2 (the originally planned backend, see
+// CLAUDE.md): R2 requires a credit card on file to enable even on its free
+// tier. Vercel Blob is free on Hobby with no card, and needs no separate
+// account since the app is already deployed on Vercel — connecting a Blob
+// store to the project sets BLOB_READ_WRITE_TOKEN automatically.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -14,23 +20,12 @@ function isSafeFilename(filename: string): boolean {
   return !filename.includes("/") && !filename.includes("\\") && !filename.includes("..");
 }
 
-function r2Config() {
-  const accountId = process.env.R2_ACCOUNT_ID;
-  const accessKeyId = process.env.R2_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
-  const bucket = process.env.R2_BUCKET_NAME;
-  const publicUrl = process.env.R2_PUBLIC_URL;
-  if (!accountId || !accessKeyId || !secretAccessKey || !bucket || !publicUrl) return null;
-  return { accountId, accessKeyId, secretAccessKey, bucket, publicUrl };
+function blobConfigured(): boolean {
+  return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 }
 
-async function getR2Client(accountId: string, accessKeyId: string, secretAccessKey: string) {
-  const { S3Client } = await import("@aws-sdk/client-s3");
-  return new S3Client({
-    region: "auto",
-    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-    credentials: { accessKeyId, secretAccessKey },
-  });
+function blobPathname(namespace: Namespace, filename: string): string {
+  return `${namespace}/${filename}`;
 }
 
 const LOCAL_ROOT = path.join(process.cwd(), ".data");
@@ -45,8 +40,8 @@ function localFilePath(namespace: Namespace, filename: string): string {
   return path.join(localDir(namespace), filename);
 }
 
-// Only used when R2 isn't configured — served by app/api/dev-files, a
-// dev-only stand-in for a real public URL.
+// Only used when Blob storage isn't configured — served by
+// app/api/dev-files, a dev-only stand-in for a real public URL.
 function localUrl(namespace: Namespace, filename: string): string {
   const base = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
   return `${base}/api/dev-files/${namespace}/${filename}`;
@@ -61,15 +56,14 @@ export async function uploadFile(
     throw new Error(`Unsafe filename: ${filename}`);
   }
 
-  const r2 = r2Config();
-  if (r2) {
-    const client = await getR2Client(r2.accountId, r2.accessKeyId, r2.secretAccessKey);
-    const { PutObjectCommand } = await import("@aws-sdk/client-s3");
-    const key = `${namespace}/${filename}`;
-    await client.send(
-      new PutObjectCommand({ Bucket: r2.bucket, Key: key, Body: buffer })
-    );
-    return { filename, url: `${r2.publicUrl.replace(/\/$/, "")}/${key}` };
+  if (blobConfigured()) {
+    const { put } = await import("@vercel/blob");
+    const { url } = await put(blobPathname(namespace, filename), buffer, {
+      access: "public",
+      addRandomSuffix: false,
+      allowOverwrite: true,
+    });
+    return { filename, url };
   }
 
   fs.writeFileSync(localFilePath(namespace, filename), buffer);
@@ -79,20 +73,12 @@ export async function uploadFile(
 export async function downloadFile(namespace: Namespace, filename: string): Promise<Buffer | null> {
   if (!isSafeFilename(filename)) return null;
 
-  const r2 = r2Config();
-  if (r2) {
-    const client = await getR2Client(r2.accountId, r2.accessKeyId, r2.secretAccessKey);
-    const { GetObjectCommand } = await import("@aws-sdk/client-s3");
-    try {
-      const res = await client.send(
-        new GetObjectCommand({ Bucket: r2.bucket, Key: `${namespace}/${filename}` })
-      );
-      const bytes = await res.Body?.transformToByteArray();
-      return bytes ? Buffer.from(bytes) : null;
-    } catch (err) {
-      if ((err as { name?: string }).name === "NoSuchKey") return null;
-      throw err;
-    }
+  if (blobConfigured()) {
+    const { get } = await import("@vercel/blob");
+    const result = await get(blobPathname(namespace, filename), { access: "public" });
+    if (!result || result.statusCode !== 200 || !result.stream) return null;
+    const arrayBuffer = await new Response(result.stream).arrayBuffer();
+    return Buffer.from(arrayBuffer);
   }
 
   const target = localFilePath(namespace, filename);
@@ -101,18 +87,15 @@ export async function downloadFile(namespace: Namespace, filename: string): Prom
 
 // Best-effort: callers should not let a failed cleanup block the database
 // operation it's attached to (e.g. deleting a course whose file is already
-// gone, or R2 being briefly unreachable). Errors are swallowed and logged.
+// gone, or Blob storage being briefly unreachable). Errors are swallowed
+// and logged.
 export async function deleteFile(namespace: Namespace, filename: string): Promise<void> {
   if (!isSafeFilename(filename)) return;
 
   try {
-    const r2 = r2Config();
-    if (r2) {
-      const client = await getR2Client(r2.accountId, r2.accessKeyId, r2.secretAccessKey);
-      const { DeleteObjectCommand } = await import("@aws-sdk/client-s3");
-      await client.send(
-        new DeleteObjectCommand({ Bucket: r2.bucket, Key: `${namespace}/${filename}` })
-      );
+    if (blobConfigured()) {
+      const { del } = await import("@vercel/blob");
+      await del(blobPathname(namespace, filename));
       return;
     }
     fs.rmSync(localFilePath(namespace, filename), { force: true });
