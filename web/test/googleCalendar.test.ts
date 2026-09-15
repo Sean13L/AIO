@@ -32,7 +32,7 @@ describe("buildAuthorizeUrl / googleCalendarConfigured", () => {
   it("requests the calendar.events scope with offline access and forced consent", () => {
     process.env.GOOGLE_CLIENT_ID = "test-client-id";
     const url = new URL(buildAuthorizeUrl("test-state"));
-    expect(url.searchParams.get("scope")).toBe("https://www.googleapis.com/auth/calendar.events");
+    expect(url.searchParams.get("scope")).toBe("https://www.googleapis.com/auth/calendar.events email");
     expect(url.searchParams.get("access_type")).toBe("offline");
     expect(url.searchParams.get("prompt")).toBe("consent");
     expect(url.searchParams.get("state")).toBe("test-state");

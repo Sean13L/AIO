@@ -12,7 +12,11 @@ import { prisma } from "@/lib/prisma";
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth";
-const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events";
+// "email" is on top of the calendar scope purely so the connected UI can
+// show which Google account is linked (getGoogleAccountEmail below) — the
+// userinfo endpoint 403s without it, since scopes aren't implied by each
+// other.
+const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events email";
 const USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo";
 
 function callbackRedirectUri(): string {
