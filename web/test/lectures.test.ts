@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -10,6 +10,17 @@ const mockSession = vi.hoisted(() => ({ userId: "" }));
 vi.mock("@/lib/session", () => ({
   getCurrentUserId: vi.fn(async () => mockSession.userId),
 }));
+
+// Force the mock preview generator regardless of whether the developer's
+// local .env has a real GEMINI_API_KEY (expected now that we tell users to
+// add one for real dev-server testing) — this suite asserts the offline
+// mock's specific wording, and must not make slow/costly real network calls.
+beforeEach(() => {
+  vi.stubEnv("GEMINI_API_KEY", "");
+});
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 // Stub file storage out with an in-memory store so these tests don't need
 // real R2 credentials or local disk.

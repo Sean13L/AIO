@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -17,6 +17,17 @@ vi.mock("@/lib/storage", () => ({
     url: `http://storage.test/files/${namespace}/${filename}`,
   })),
 }));
+
+// Force the mock extractor regardless of whether the developer's local .env
+// has a real GEMINI_API_KEY (expected now that we tell users to add one for
+// real dev-server testing) — these tests assert the offline-mock fallback
+// path specifically, and must not make real network calls either way.
+beforeEach(() => {
+  vi.stubEnv("GEMINI_API_KEY", "");
+});
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 const sampleSyllabus = `CS 135 — Designing Functional Programs
 Semester: 1A
@@ -46,7 +57,7 @@ describe.skipIf(!hasDb)("Syllabus ingestion API route (requires DATABASE_URL)", 
   });
 
   it("parses pasted text end-to-end into a course, items, and lectures (no API key -> mock extractor)", async () => {
-    expect(process.env.ANTHROPIC_API_KEY).toBeFalsy();
+    expect(process.env.GEMINI_API_KEY).toBeFalsy();
 
     const { POST } = await import("@/app/api/syllabi/route");
     const formData = new FormData();
@@ -59,7 +70,7 @@ describe.skipIf(!hasDb)("Syllabus ingestion API route (requires DATABASE_URL)", 
     const result = await res.json();
     expect(result.itemsCreated).toBeGreaterThan(0);
     expect(result.lecturesCreated).toBeGreaterThan(0);
-    // No ANTHROPIC_API_KEY in this test env, so extraction fell back to the
+    // No GEMINI_API_KEY in this test env, so extraction fell back to the
     // offline mock — callers (the upload page) need this flag to warn the
     // user rather than silently showing possibly-garbage results.
     expect(result.usedMock).toBe(true);

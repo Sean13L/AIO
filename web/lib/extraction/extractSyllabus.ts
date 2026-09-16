@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { FunctionCallingConfigMode, GoogleGenAI } from "@google/genai";
 import {
   syllabusExtractionSchema,
   type SyllabusExtraction,
@@ -10,6 +10,8 @@ const TOOL_NAME = "record_syllabus_extraction";
 // Hand-written JSON Schema for the extraction tool's input. Kept in sync with
 // ./schema.ts by hand — duplicating the shape here is simpler and more
 // transparent than deriving it from the zod schema for a schema this size.
+// Also doubles as Gemini's `parametersJsonSchema` — both APIs accept plain
+// JSON Schema for structured/tool output, so one definition covers both.
 const extractionToolInputSchema = {
   type: "object",
   properties: {
@@ -121,7 +123,15 @@ const extractionToolInputSchema = {
   ],
 } as const;
 
-const SYSTEM_PROMPT = `You extract structured data from a course syllabus for a student planning tool.
+// A function, not a constant, so "today" is accurate at request time —
+// without an explicit anchor, dates in a syllabus that never states its own
+// year (common: "Fall Term", "Week 1 (Sept 3)") get inferred against the
+// model's training cutoff instead of the actual current year, landing
+// deadlines in the past. Found by testing against a real (unstructured,
+// year-less) syllabus.
+function systemPrompt(): string {
+  const today = new Date().toISOString().slice(0, 10);
+  return `You extract structured data from a course syllabus for a student planning tool. Today's date is ${today} — use this to resolve any date in the syllabus that doesn't state an explicit year (e.g. "Week 1 (Sept 3)", "Fall Term"). Assume such dates refer to the current or nearest upcoming occurrence relative to today, never a past year, unless the syllabus text itself states a different year.
 
 Rules:
 - due_date/scheduled_date are always required, in YYYY-MM-DD.
@@ -132,6 +142,7 @@ Rules:
 - grading_scheme lists each graded component and its weight as stated in the syllabus.
 - required_tools lists textbooks, software, calculators, platforms/LMS the syllabus says are required.
 - Do not invent dates, weights, or policies that are not present in the text — use null/empty arrays when the syllabus doesn't say.`;
+}
 
 export interface ExtractSyllabusOptions {
   syllabusText: string;
@@ -139,7 +150,7 @@ export interface ExtractSyllabusOptions {
   model?: string;
 }
 
-// Callers need to know when the offline mock stood in for real Claude
+// Callers need to know when the offline mock stood in for real Gemini
 // extraction — it only matches syllabi formatted in one specific way (see
 // mockExtractSyllabus.ts) and otherwise produces near-garbage that reads as
 // "random" if surfaced silently. See ingestSyllabus.ts / app/upload for
@@ -151,49 +162,50 @@ export interface ExtractSyllabusResult {
 
 export async function extractSyllabus({
   syllabusText,
-  apiKey = process.env.ANTHROPIC_API_KEY,
-  model = process.env.CLAUDE_MODEL ?? "claude-sonnet-5",
+  apiKey = process.env.GEMINI_API_KEY,
+  model = process.env.GEMINI_MODEL ?? "gemini-3.6-flash",
 }: ExtractSyllabusOptions): Promise<ExtractSyllabusResult> {
   if (!apiKey) {
     console.warn(
-      "[extractSyllabus] ANTHROPIC_API_KEY is not set — falling back to the " +
+      "[extractSyllabus] GEMINI_API_KEY is not set — falling back to the " +
         "local heuristic mock extractor (mockExtractSyllabus.ts). This is a " +
         "workaround for running the pipeline without an API key; results " +
-        "will be far less accurate than real Claude extraction."
+        "will be far less accurate than real Gemini extraction."
     );
     return { extraction: mockExtractSyllabus(syllabusText), usedMock: true };
   }
 
-  const client = new Anthropic({ apiKey });
+  const client = new GoogleGenAI({ apiKey });
 
-  const response = await client.messages.create({
+  const response = await client.models.generateContent({
     model,
-    max_tokens: 8192,
-    system: SYSTEM_PROMPT,
-    tools: [
-      {
-        name: TOOL_NAME,
-        description:
-          "Record the structured data extracted from a course syllabus.",
-        input_schema: extractionToolInputSchema as Anthropic.Tool["input_schema"],
+    contents: `Here is the syllabus text:\n\n${syllabusText}`,
+    config: {
+      systemInstruction: systemPrompt(),
+      toolConfig: {
+        functionCallingConfig: {
+          mode: FunctionCallingConfigMode.ANY,
+          allowedFunctionNames: [TOOL_NAME],
+        },
       },
-    ],
-    tool_choice: { type: "tool", name: TOOL_NAME },
-    messages: [
-      {
-        role: "user",
-        content: `Here is the syllabus text:\n\n${syllabusText}`,
-      },
-    ],
+      tools: [
+        {
+          functionDeclarations: [
+            {
+              name: TOOL_NAME,
+              description: "Record the structured data extracted from a course syllabus.",
+              parametersJsonSchema: extractionToolInputSchema,
+            },
+          ],
+        },
+      ],
+    },
   });
 
-  const toolUse = response.content.find(
-    (block): block is Anthropic.ToolUseBlock => block.type === "tool_use"
-  );
-
-  if (!toolUse) {
-    throw new Error("Claude did not return a tool_use block for extraction");
+  const call = response.functionCalls?.[0];
+  if (!call?.args) {
+    throw new Error("Gemini did not return a function call for extraction");
   }
 
-  return { extraction: syllabusExtractionSchema.parse(toolUse.input), usedMock: false };
+  return { extraction: syllabusExtractionSchema.parse(call.args), usedMock: false };
 }

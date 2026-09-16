@@ -1,4 +1,4 @@
-// Local, offline stand-in for generatePreview() when ANTHROPIC_API_KEY isn't
+// Local, offline stand-in for generatePreview() when GEMINI_API_KEY isn't
 // set — mirrors the mockExtractSyllabus.ts pattern from the extraction
 // pipeline. Not a real synthesis, just enough to exercise the pipeline
 // (upload slides -> generate -> persist -> view) without an API key.
@@ -17,7 +17,7 @@ export function mockGeneratePreview({
   slidesText,
 }: MockGeneratePreviewInput): string {
   const lines = [
-    `Pre-lecture preview for ${courseCode} (locally generated — no ANTHROPIC_API_KEY set).`,
+    `Pre-lecture preview for ${courseCode} (locally generated — no GEMINI_API_KEY set).`,
   ];
 
   if (topics) {

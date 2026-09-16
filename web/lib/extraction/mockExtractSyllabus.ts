@@ -4,8 +4,8 @@ import type {
   SyllabusExtraction,
 } from "./schema";
 
-// Local, offline stand-in for extractSyllabus() when ANTHROPIC_API_KEY isn't
-// set. Regex/heuristic based — far less capable than the real Claude
+// Local, offline stand-in for extractSyllabus() when GEMINI_API_KEY isn't
+// set. Regex/heuristic based — far less capable than the real Gemini
 // extraction, but lets the upload -> extract -> persist pipeline run for
 // real (no network call) so it can be exercised without an API key.
 // extractSyllabus() falls back to this automatically; see extractSyllabus.ts.

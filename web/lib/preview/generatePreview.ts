@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenAI } from "@google/genai";
 import { mockGeneratePreview } from "./mockGeneratePreview";
 
 const SYSTEM_PROMPT = `You help a student prepare for an upcoming lecture. Given the syllabus's
@@ -23,18 +23,18 @@ export async function generatePreview({
   courseCode,
   topics,
   slidesText,
-  apiKey = process.env.ANTHROPIC_API_KEY,
-  model = process.env.CLAUDE_MODEL ?? "claude-sonnet-5",
+  apiKey = process.env.GEMINI_API_KEY,
+  model = process.env.GEMINI_MODEL ?? "gemini-3.6-flash",
 }: GeneratePreviewInput): Promise<string> {
   if (!apiKey) {
     console.warn(
-      "[generatePreview] ANTHROPIC_API_KEY is not set — falling back to the " +
+      "[generatePreview] GEMINI_API_KEY is not set — falling back to the " +
         "local mock preview generator (mockGeneratePreview.ts)."
     );
     return mockGeneratePreview({ courseCode, topics, slidesText });
   }
 
-  const client = new Anthropic({ apiKey });
+  const client = new GoogleGenAI({ apiKey });
 
   const userContent = [
     `Course: ${courseCode}`,
@@ -46,20 +46,15 @@ export async function generatePreview({
       : "Slides have not been uploaded yet for this session.",
   ].join("\n\n");
 
-  const response = await client.messages.create({
+  const response = await client.models.generateContent({
     model,
-    max_tokens: 1024,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userContent }],
+    contents: userContent,
+    config: { systemInstruction: SYSTEM_PROMPT },
   });
 
-  const textBlock = response.content.find(
-    (block): block is Anthropic.TextBlock => block.type === "text"
-  );
-
-  if (!textBlock) {
-    throw new Error("Claude did not return a text block for the lecture preview");
+  if (!response.text) {
+    throw new Error("Gemini did not return text for the lecture preview");
   }
 
-  return textBlock.text;
+  return response.text;
 }

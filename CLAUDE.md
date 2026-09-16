@@ -14,7 +14,7 @@ Product name is **Studently** (the name already in use on the deployed Vercel pr
 
 ### 1. Syllabus Import & Extraction
 - Accept uploaded syllabus files (PDF, DOCX, and pasted text at minimum).
-- Use an LLM (Claude API) to extract structured data:
+- Use an LLM (Gemini API — see Implemented Stack for why) to extract structured data:
   - Grading scheme / weight breakdown
   - Course rules and policies (late work, attendance, academic integrity, regrade policy, etc.)
   - Tools/platforms required (e.g., specific textbook, LMS, software, calculators)
@@ -77,7 +77,7 @@ The app's data model should mirror the structure already validated in Notion:
 
 ## Implemented Stack
 A single Next.js app (`web/`) — the earlier `worker/` + Docker Compose hybrid split was collapsed back into one app once its two jobs became serverless-viable, so there's now one deployable unit instead of two:
-- **App:** Next.js (App Router) + Tailwind, Next.js API routes, Prisma against Postgres, NextAuth.js (Google OAuth + magic links via a direct Resend API call — not v5-beta, not nodemailer). Calls Claude directly for syllabus extraction and lecture-preview generation.
+- **App:** Next.js (App Router) + Tailwind, Next.js API routes, Prisma against Postgres, NextAuth.js (Google OAuth + magic links via a direct Resend API call — not v5-beta, not nodemailer). Calls Gemini directly for syllabus extraction and lecture-preview generation — switched from the originally-planned Claude API because Anthropic's API has no ongoing free tier (a one-time $5 trial credit, then paid), while Gemini's free tier (via Google AI Studio, no card) is generous enough for a single student's real usage indefinitely. `lib/extraction/extractSyllabus.ts` and `lib/preview/generatePreview.ts` fall back to local heuristic mocks (`mockExtractSyllabus.ts`, `mockGeneratePreview.ts`) when `GEMINI_API_KEY` isn't set — same "gracefully degrade" pattern as file storage — but the mock is narrow-format-only, so `ingestSyllabus.ts` surfaces a `usedMock` flag the upload UI turns into a visible warning rather than silently returning inaccurate results.
 - **Database:** Postgres — Neon in production (real free tier, no expiration), a local native install for dev. One `schema.prisma`, no more duplication.
 - **File storage** (uploaded syllabi + lecture slides): Vercel Blob via `web/lib/storage.ts`. Switched from the originally planned Cloudflare R2 because R2 requires a credit card on file to enable even within its free tier, while Blob is free on Vercel's Hobby plan with no card and no separate account — the project already deploys on Vercel, so connecting a Blob store just sets `BLOB_READ_WRITE_TOKEN` automatically. Falls back to local disk under `web/.data/` when that env var isn't set, so local dev/CI need no external service — same pattern as the mock syllabus extractor and mock preview generator below.
 - **Lecture-preview scheduler:** was an always-on polling loop in `worker/`; now `web/app/api/cron/generate-previews/route.ts`, triggered by Vercel Cron (see `vercel.json`) since Vercel's free Hobby tier only allows daily cron — acceptable given `PREVIEW_LEAD_HOURS` defaults to 48h.
