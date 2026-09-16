@@ -66,6 +66,23 @@
   color-scheme: light;
 }
 
+/* ---------- Top accent bar ---------- */
+/* A slim, static strip across the very top of every page — the one place
+   the full brand palette (not just the locked violet accent) shows up
+   outside marketing/course-identity contexts, so productivity views (tables,
+   board, forms) stay visually quiet while the app still reads as colorful
+   at a glance. */
+.top-accent-bar {
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--color-primary),
+    var(--tag-blue-text),
+    var(--tag-teal-text),
+    var(--tag-amber-text)
+  );
+}
+
 * {
   box-sizing: border-box;
 }
@@ -796,6 +813,57 @@ form.inline label {
   margin: 0.3rem 0 0.35rem;
 }
 
+/* ---------- Course accents (per-course color-coding) ---------- */
+/* Solid-background variant of the tag palette, for identity elements (an
+   avatar, a header dot) where pastel-on-pastel wouldn't have enough
+   contrast to read as a color swatch. Paired with lib/uiColors.ts's
+   courseAccentKey(). */
+
+.course-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.01em;
+}
+
+.course-avatar-sm {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 999px;
+}
+
+.avatar-blue {
+  background: var(--tag-blue-text);
+}
+.avatar-teal {
+  background: var(--tag-teal-text);
+}
+.avatar-amber {
+  background: var(--tag-amber-text);
+}
+.avatar-rose {
+  background: var(--tag-rose-text);
+}
+.avatar-violet {
+  background: var(--tag-violet-text);
+}
+.avatar-pink {
+  background: var(--tag-pink-text);
+}
+.avatar-slate {
+  background: var(--tag-slate-text);
+}
+.avatar-green {
+  background: var(--tag-green-text);
+}
+
 /* ---------- Badges (generic, low-emphasis) ---------- */
 
 .badge {
@@ -815,12 +883,33 @@ form.inline label {
 /* ---------- Homepage (signed-out) ---------- */
 
 .home-hero {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   gap: 1.1rem;
   padding: 3.5rem 1rem 3rem;
+  overflow: hidden;
+}
+
+/* Soft, blurred color blobs behind the hero text only — decorative, kept
+   out of every other view so dense/productivity screens stay uncluttered. */
+.home-hero-glow {
+  position: absolute;
+  inset: -15% -10% auto -10%;
+  height: 420px;
+  background: radial-gradient(320px 220px at 18% 25%, rgba(108, 92, 231, 0.24), transparent 70%),
+    radial-gradient(300px 220px at 82% 20%, rgba(15, 148, 136, 0.18), transparent 70%),
+    radial-gradient(280px 220px at 50% 95%, rgba(180, 83, 9, 0.14), transparent 70%);
+  filter: blur(6px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.home-hero > *:not(.home-hero-glow) {
+  position: relative;
+  z-index: 1;
 }
 
 .home-hero h1 {
@@ -863,8 +952,16 @@ form.inline label {
   gap: 0.5rem;
 }
 
-.feature-card .feature-icon {
-  font-size: 1.4rem;
+.feature-icon-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--radius-md);
+  font-size: 1.3rem;
+  background: rgba(255, 255, 255, 0.65);
+  box-shadow: var(--shadow-sm);
 }
 
 .feature-card h3 {

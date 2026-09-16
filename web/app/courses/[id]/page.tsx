@@ -14,7 +14,13 @@ import {
   type Lecture,
 } from "@/lib/types";
 import { formatDue, splitDueAt } from "@/lib/dates";
-import { ITEM_TYPE_TAG, PREVIEW_STATUS_TAG, itemTypeLabel } from "@/lib/uiColors";
+import {
+  courseAccentKey,
+  courseInitials,
+  ITEM_TYPE_TAG,
+  PREVIEW_STATUS_TAG,
+  itemTypeLabel,
+} from "@/lib/uiColors";
 
 const PREVIEW_STATUS_LABELS: Record<Lecture["preview_status"], string> = {
   not_generated: "Not generated",
@@ -172,10 +178,18 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
       {error && <p className="error">{error}</p>}
 
       {course && (
-        <h1>
-          {course.course_code} — {course.course_name}
-          {course.semester && <span className="badge">{course.semester}</span>}
-        </h1>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
+          <span
+            className={`course-avatar avatar-${courseAccentKey(course.course_code)}`}
+            aria-hidden="true"
+          >
+            {courseInitials(course.course_code)}
+          </span>
+          <h1 style={{ margin: 0 }}>
+            {course.course_code} — {course.course_name}
+            {course.semester && <span className="badge">{course.semester}</span>}
+          </h1>
+        </div>
       )}
 
       <div className="card">

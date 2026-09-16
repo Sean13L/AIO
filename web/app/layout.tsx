@@ -17,6 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={inter.variable}>
       <body>
+        <div className="top-accent-bar" aria-hidden="true" />
         <a href="#main-content" className="skip-link">
           Skip to content
         </a>

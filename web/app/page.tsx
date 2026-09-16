@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import type { Course } from "@/lib/types";
 import { CalendarFeedCard } from "@/components/CalendarFeedCard";
 import { LogoMark } from "@/components/Logo";
+import { courseAccentKey, courseInitials } from "@/lib/uiColors";
 
 export default function CoursesPage() {
   const { email, ready } = useAuthGate();
@@ -71,6 +72,7 @@ export default function CoursesPage() {
     return (
       <div>
         <div className="home-hero">
+          <div className="home-hero-glow" aria-hidden="true" />
           <LogoMark size={56} />
           <h1>Your syllabus, turned into a semester you can actually plan around</h1>
           <p className="lede">
@@ -90,7 +92,7 @@ export default function CoursesPage() {
         </p>
         <div className="feature-grid">
           <div className="feature-card feature-card-blue">
-            <span className="feature-icon" aria-hidden="true">
+            <span className="feature-icon-circle" aria-hidden="true">
               📄
             </span>
             <h3>AI syllabus extraction</h3>
@@ -100,7 +102,7 @@ export default function CoursesPage() {
             </p>
           </div>
           <div className="feature-card feature-card-violet">
-            <span className="feature-icon" aria-hidden="true">
+            <span className="feature-icon-circle" aria-hidden="true">
               🗓️
             </span>
             <h3>A calendar that just works</h3>
@@ -110,7 +112,7 @@ export default function CoursesPage() {
             </p>
           </div>
           <div className="feature-card feature-card-teal">
-            <span className="feature-icon" aria-hidden="true">
+            <span className="feature-icon-circle" aria-hidden="true">
               🎓
             </span>
             <h3>Pre-lecture previews</h3>
@@ -120,7 +122,7 @@ export default function CoursesPage() {
             </p>
           </div>
           <div className="feature-card feature-card-amber">
-            <span className="feature-icon" aria-hidden="true">
+            <span className="feature-icon-circle" aria-hidden="true">
               ✅
             </span>
             <h3>Timeline, board, and to-dos</h3>
@@ -203,11 +205,19 @@ export default function CoursesPage() {
         <ul className="course-list">
           {courses.map((course) => (
             <li key={course.id} className="card">
-              <div>
-                <Link href={`/courses/${course.id}`}>
-                  <strong>{course.course_code}</strong> — {course.course_name}
-                </Link>
-                {course.semester && <span className="badge">{course.semester}</span>}
+              <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
+                <span
+                  className={`course-avatar avatar-${courseAccentKey(course.course_code)}`}
+                  aria-hidden="true"
+                >
+                  {courseInitials(course.course_code)}
+                </span>
+                <div>
+                  <Link href={`/courses/${course.id}`}>
+                    <strong>{course.course_code}</strong> — {course.course_name}
+                  </Link>
+                  {course.semester && <span className="badge">{course.semester}</span>}
+                </div>
               </div>
               <button className="danger" onClick={() => handleDelete(course.id)}>
                 Delete

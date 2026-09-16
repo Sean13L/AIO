@@ -6,7 +6,7 @@ import { useAuthGate } from "@/lib/useAuthGate";
 import { api } from "@/lib/api";
 import { formatDue } from "@/lib/dates";
 import { ITEM_STATUSES, type ItemStatus, type ItemWithCourse } from "@/lib/types";
-import { ITEM_TYPE_TAG, itemTypeLabel } from "@/lib/uiColors";
+import { courseAccentKey, ITEM_TYPE_TAG, itemTypeLabel } from "@/lib/uiColors";
 
 const COLUMN_LABELS: Record<ItemStatus, string> = {
   not_started: "Not started",
@@ -91,7 +91,10 @@ export default function BoardPage() {
                   draggable
                   onDragStart={(e) => e.dataTransfer.setData("text/plain", item.id)}
                 >
-                  <div className="board-card-course">
+                  <div
+                    className="board-card-course"
+                    style={{ color: `var(--tag-${courseAccentKey(item.course_code)}-text)` }}
+                  >
                     <Link href={`/courses/${item.course_id}`}>{item.course_code}</Link>
                   </div>
                   <div className="board-card-name">{item.name}</div>

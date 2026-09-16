@@ -49,3 +49,34 @@ export function itemTypeLabel(type: ItemType): string {
 export function itemStatusLabel(status: ItemStatus): string {
   return STATUS_LABELS[status];
 }
+
+// Deterministic per-course color, used purely as a scanning aid across
+// multiple courses (dashboard list, course header, board cards) — distinct
+// from ITEM_TYPE_TAG/STATUS_TAG, which color by category rather than course.
+// Same course code always maps to the same color, with no color persisted
+// in the database.
+const COURSE_ACCENT_KEYS = [
+  "blue",
+  "teal",
+  "amber",
+  "rose",
+  "violet",
+  "pink",
+  "green",
+  "slate",
+] as const;
+
+export type CourseAccentKey = (typeof COURSE_ACCENT_KEYS)[number];
+
+export function courseAccentKey(courseCode: string): CourseAccentKey {
+  let hash = 0;
+  for (let i = 0; i < courseCode.length; i++) {
+    hash = (hash * 31 + courseCode.charCodeAt(i)) >>> 0;
+  }
+  return COURSE_ACCENT_KEYS[hash % COURSE_ACCENT_KEYS.length];
+}
+
+export function courseInitials(courseCode: string): string {
+  const letters = courseCode.match(/[A-Za-z]+/)?.[0] ?? courseCode;
+  return letters.slice(0, 2).toUpperCase();
+}
