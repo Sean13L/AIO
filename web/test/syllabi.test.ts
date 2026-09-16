@@ -59,11 +59,69 @@ describe.skipIf(!hasDb)("Syllabus ingestion API route (requires DATABASE_URL)", 
     const result = await res.json();
     expect(result.itemsCreated).toBeGreaterThan(0);
     expect(result.lecturesCreated).toBeGreaterThan(0);
+    // No ANTHROPIC_API_KEY in this test env, so extraction fell back to the
+    // offline mock — callers (the upload page) need this flag to warn the
+    // user rather than silently showing possibly-garbage results.
+    expect(result.usedMock).toBe(true);
 
     const items = await prisma.items.findMany({ where: { course_id: result.courseId } });
     expect(items.length).toBe(result.itemsCreated);
 
     await prisma.courses.delete({ where: { id: result.courseId } });
+  });
+
+  it("attaches to an explicit course_id instead of auto-matching/creating a course", async () => {
+    const targetCourse = await prisma.courses.create({
+      data: {
+        user_id: mockSession.userId,
+        course_code: "SOMETHING-ELSE",
+        course_name: "Pre-existing course the user picked",
+        semester: "9Z",
+      },
+    });
+
+    const { POST } = await import("@/app/api/syllabi/route");
+    const formData = new FormData();
+    formData.append("text", sampleSyllabus);
+    formData.append("course_id", targetCourse.id);
+
+    const res = await POST(
+      new NextRequest("http://localhost/api/syllabi", { method: "POST", body: formData })
+    );
+    expect(res.status).toBe(201);
+    const result = await res.json();
+    expect(result.courseId).toBe(targetCourse.id);
+
+    // The explicitly-picked course's own fields are untouched by the
+    // syllabus's extracted course_code/name/semester.
+    const course = await prisma.courses.findUniqueOrThrow({ where: { id: targetCourse.id } });
+    expect(course.course_code).toBe("SOMETHING-ELSE");
+    expect(course.semester).toBe("9Z");
+
+    const items = await prisma.items.findMany({ where: { course_id: targetCourse.id } });
+    expect(items.length).toBe(result.itemsCreated);
+
+    await prisma.courses.delete({ where: { id: targetCourse.id } });
+  });
+
+  it("404s when course_id doesn't belong to the signed-in user", async () => {
+    const otherUser = await prisma.user.create({ data: { email: `other-${Date.now()}@example.com` } });
+    const otherCourse = await prisma.courses.create({
+      data: { user_id: otherUser.id, course_code: "NOTYOURS", course_name: "Not yours" },
+    });
+
+    const { POST } = await import("@/app/api/syllabi/route");
+    const formData = new FormData();
+    formData.append("text", sampleSyllabus);
+    formData.append("course_id", otherCourse.id);
+
+    const res = await POST(
+      new NextRequest("http://localhost/api/syllabi", { method: "POST", body: formData })
+    );
+    expect(res.status).toBe(404);
+
+    await prisma.courses.delete({ where: { id: otherCourse.id } });
+    await prisma.user.delete({ where: { id: otherUser.id } });
   });
 
   it("archives an uploaded file and stores its URL as file_url", async () => {

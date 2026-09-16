@@ -120,11 +120,14 @@ export const api = {
     return res.json();
   },
 
-  uploadSyllabus: async (input: { file: File } | { text: string }): Promise<{
+  uploadSyllabus: async (
+    input: ({ file: File } | { text: string }) & { courseId?: string }
+  ): Promise<{
     courseId: string;
     syllabusId: string;
     itemsCreated: number;
     lecturesCreated: number;
+    usedMock: boolean;
   }> => {
     const formData = new FormData();
     if ("file" in input) {
@@ -132,6 +135,7 @@ export const api = {
     } else {
       formData.append("text", input.text);
     }
+    if (input.courseId) formData.append("course_id", input.courseId);
 
     const res = await fetch("/api/syllabi", { method: "POST", body: formData });
     if (!res.ok) {

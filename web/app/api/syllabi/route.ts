@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/session";
 import { ingestSyllabus } from "@/lib/ingestSyllabus";
 import { uploadFile } from "@/lib/storage";
@@ -12,6 +13,13 @@ export async function POST(req: NextRequest) {
   const formData = await req.formData();
   const file = formData.get("file");
   const text = formData.get("text");
+  const courseIdRaw = formData.get("course_id");
+  const courseId = typeof courseIdRaw === "string" && courseIdRaw.trim() ? courseIdRaw : undefined;
+
+  if (courseId) {
+    const course = await prisma.courses.findFirst({ where: { id: courseId, user_id: userId } });
+    if (!course) return NextResponse.json({ error: "Course not found" }, { status: 404 });
+  }
 
   try {
     if (file instanceof File) {
@@ -30,6 +38,7 @@ export async function POST(req: NextRequest) {
         userId,
         fileUrl: url,
         input: { kind: "file", buffer, fileName: file.name },
+        courseId,
       });
       return NextResponse.json(result, { status: 201 });
     }
@@ -39,6 +48,7 @@ export async function POST(req: NextRequest) {
         userId,
         fileUrl: `pasted-text:${Date.now()}`,
         input: { kind: "text", text },
+        courseId,
       });
       return NextResponse.json(result, { status: 201 });
     }

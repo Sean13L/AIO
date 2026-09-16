@@ -139,11 +139,21 @@ export interface ExtractSyllabusOptions {
   model?: string;
 }
 
+// Callers need to know when the offline mock stood in for real Claude
+// extraction — it only matches syllabi formatted in one specific way (see
+// mockExtractSyllabus.ts) and otherwise produces near-garbage that reads as
+// "random" if surfaced silently. See ingestSyllabus.ts / app/upload for
+// where this becomes a warning shown to the user.
+export interface ExtractSyllabusResult {
+  extraction: SyllabusExtraction;
+  usedMock: boolean;
+}
+
 export async function extractSyllabus({
   syllabusText,
   apiKey = process.env.ANTHROPIC_API_KEY,
   model = process.env.CLAUDE_MODEL ?? "claude-sonnet-5",
-}: ExtractSyllabusOptions): Promise<SyllabusExtraction> {
+}: ExtractSyllabusOptions): Promise<ExtractSyllabusResult> {
   if (!apiKey) {
     console.warn(
       "[extractSyllabus] ANTHROPIC_API_KEY is not set — falling back to the " +
@@ -151,7 +161,7 @@ export async function extractSyllabus({
         "workaround for running the pipeline without an API key; results " +
         "will be far less accurate than real Claude extraction."
     );
-    return mockExtractSyllabus(syllabusText);
+    return { extraction: mockExtractSyllabus(syllabusText), usedMock: true };
   }
 
   const client = new Anthropic({ apiKey });
@@ -185,5 +195,5 @@ export async function extractSyllabus({
     throw new Error("Claude did not return a tool_use block for extraction");
   }
 
-  return syllabusExtractionSchema.parse(toolUse.input);
+  return { extraction: syllabusExtractionSchema.parse(toolUse.input), usedMock: false };
 }

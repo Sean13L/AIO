@@ -1,23 +1,42 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuthGate } from "@/lib/useAuthGate";
 import { api } from "@/lib/api";
+import type { Course } from "@/lib/types";
 
 interface UploadResult {
   courseId: string;
   itemsCreated: number;
   lecturesCreated: number;
+  usedMock: boolean;
 }
 
 export default function UploadPage() {
   const { email, ready } = useAuthGate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
   const [pastedText, setPastedText] = useState("");
+  const [courses, setCourses] = useState<Course[] | null>(null);
+  const [courseId, setCourseId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<UploadResult | null>(null);
+
+  useEffect(() => {
+    if (!email) return;
+    api.listCourses().then(setCourses).catch((err) => setError((err as Error).message));
+  }, [email]);
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setFileName(e.target.files?.[0]?.name ?? null);
+  }
+
+  function clearFile() {
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    setFileName(null);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -29,11 +48,11 @@ export default function UploadPage() {
     setResult(null);
     try {
       const res = file
-        ? await api.uploadSyllabus({ file })
-        : await api.uploadSyllabus({ text: pastedText });
+        ? await api.uploadSyllabus({ file, courseId: courseId || undefined })
+        : await api.uploadSyllabus({ text: pastedText, courseId: courseId || undefined });
       setResult(res);
       setPastedText("");
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      clearFile();
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -67,6 +86,23 @@ export default function UploadPage() {
             ✓ Imported {result.itemsCreated} item{result.itemsCreated === 1 ? "" : "s"} and{" "}
             {result.lecturesCreated} lecture{result.lecturesCreated === 1 ? "" : "s"}.
           </p>
+          {result.usedMock && (
+            <p
+              className="muted"
+              style={{
+                background: "var(--color-warning-light)",
+                color: "var(--color-warning)",
+                padding: "0.6rem 0.8rem",
+                borderRadius: "var(--radius-sm)",
+                marginBottom: "0.75rem",
+              }}
+            >
+              ⚠ No AI extraction key is configured, so this used a basic offline parser instead
+              of real AI extraction — it only picks up a narrow set of formats and may have
+              produced inaccurate or missing items. Check the course page and edit anything
+              that&apos;s wrong.
+            </p>
+          )}
           <Link href={`/courses/${result.courseId}`}>
             <button type="button">View course</button>
           </Link>
@@ -79,7 +115,28 @@ export default function UploadPage() {
             <label>
               <strong>File</strong> (.pdf, .docx, .txt, .md)
               <br />
-              <input ref={fileInputRef} type="file" accept=".pdf,.docx,.txt,.md" />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.docx,.txt,.md"
+                onChange={handleFileChange}
+                style={{ display: fileName ? "none" : "inline-block" }}
+              />
+              {fileName && (
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.6rem",
+                    marginTop: "0.3rem",
+                  }}
+                >
+                  <span>{fileName}</span>
+                  <button type="button" className="secondary" onClick={clearFile}>
+                    Remove file
+                  </button>
+                </span>
+              )}
             </label>
           </p>
           <p className="muted">— or —</p>
@@ -94,6 +151,25 @@ export default function UploadPage() {
                 style={{ width: "100%", marginTop: "0.4rem" }}
                 placeholder="Paste the full syllabus text here…"
               />
+            </label>
+          </p>
+          <p>
+            <label>
+              <strong>Add to</strong>
+              <br />
+              <select
+                value={courseId}
+                onChange={(e) => setCourseId(e.target.value)}
+                style={{ marginTop: "0.3rem" }}
+              >
+                <option value="">Detect automatically (new or matching course)</option>
+                {courses?.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.course_code} — {c.course_name}
+                    {c.semester ? ` (${c.semester})` : ""}
+                  </option>
+                ))}
+              </select>
             </label>
           </p>
           <button type="submit" disabled={submitting}>
