@@ -6,6 +6,7 @@ import { useAuthGate } from "@/lib/useAuthGate";
 import { api } from "@/lib/api";
 import { formatDue } from "@/lib/dates";
 import type { Lecture } from "@/lib/types";
+import { PREVIEW_STATUS_TAG } from "@/lib/uiColors";
 
 const PREVIEW_STATUS_LABELS: Record<Lecture["preview_status"], string> = {
   not_generated: "Not generated yet",
@@ -90,8 +91,10 @@ export default function LecturePage({
       {error && <p className="error">{error}</p>}
 
       <h1>
-        Lecture{lecture.week_number ? ` — Week ${lecture.week_number}` : ""}
-        <span className="badge">{PREVIEW_STATUS_LABELS[lecture.preview_status]}</span>
+        Lecture{lecture.week_number ? ` — Week ${lecture.week_number}` : ""}{" "}
+        <span className={`tag ${PREVIEW_STATUS_TAG[lecture.preview_status]}`}>
+          {PREVIEW_STATUS_LABELS[lecture.preview_status]}
+        </span>
       </h1>
       <p className="muted">{formatDue({ due_at: lecture.scheduled_at, is_datetime: true })}</p>
 

@@ -3,6 +3,9 @@
 ## Purpose
 An app that uses AI to automatically ingest course syllabuses, extract the information that actually matters, and turn it into a live, organized, forward-looking system for staying on top of school — not just a static summary.
 
+## Branding
+Product name is **Studently** (the name already in use on the deployed Vercel project and Google OAuth app before this was made official) — "AI Syllabus Assistant" now serves as the tagline/description. Visual identity: a single locked accent (`#6C5CE7` violet, used only for interactive elements — buttons, links, active nav, focus rings), warm-neutral light surfaces, and a pastel tag-color system (`.tag-blue/teal/amber/rose/violet/pink/slate/green` in `web/app/globals.css`) for categorical badges (item type, status, source) so color-coding never gets confused with clickability. Logo is an inline SVG mark (`web/components/Logo.tsx`, also `web/app/icon.svg` for the favicon) — a rounded-square check-mark glyph, no external image asset. Signed-out visitors at `/` see a real marketing homepage (hero + feature grid); signed-in users see the existing courses dashboard at the same route.
+
 ## User Model
 - **Single-user data model:** each account owns its own courses, deadlines, and lectures. No shared/multi-student course records in the core data model.
 - **Multi-user calendar syncing (optional layer on top):** the calendar sync feature should support pushing a user's calendar to more than one destination — e.g. the student's own Google Calendar plus a parent's or study partner's. This is a sync-layer capability, not a change to the single-user ownership model underneath.

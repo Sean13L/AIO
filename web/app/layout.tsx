@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import Link from "next/link";
 import { AuthSessionProvider } from "@/components/AuthSessionProvider";
 import { TopBar } from "@/components/TopBar";
 import "./globals.css";
@@ -7,17 +8,27 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "AI Syllabus Assistant",
-  description: "Courses, deadlines, and lectures extracted from your syllabuses.",
+  title: "Studently — AI Syllabus Assistant",
+  description:
+    "Upload a syllabus and Studently turns it into a live calendar, deadline tracker, and lecture pre-review — organized automatically.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={inter.variable}>
       <body>
+        <a href="#main-content" className="skip-link">
+          Skip to content
+        </a>
         <AuthSessionProvider>
           <TopBar />
-          <main className="container">{children}</main>
+          <main id="main-content" className="container">
+            {children}
+          </main>
+          <footer className="site-footer">
+            <span>© {new Date().getFullYear()} Studently</span>
+            <Link href="/privacy">Privacy</Link>
+          </footer>
         </AuthSessionProvider>
       </body>
     </html>

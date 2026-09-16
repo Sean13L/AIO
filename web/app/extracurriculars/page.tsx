@@ -130,7 +130,13 @@ export default function ExtracurricularsPage() {
       {items === null ? (
         <p className="muted">Loading…</p>
       ) : items.length === 0 ? (
-        <p className="muted">Nothing here yet — add a side project or activity above.</p>
+        <div className="empty-state">
+          <span className="empty-state-icon" aria-hidden="true">
+            🎯
+          </span>
+          <h3>Nothing here yet</h3>
+          <p>Add a side project, club, or activity above — kept separate from coursework.</p>
+        </div>
       ) : (
         items.map((item) => (
           <div key={item.id} className="card">

@@ -14,8 +14,8 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
     "@next-auth/prisma-adapter": "^1.0.7",
-    "@vercel/blob": "^2.8.0",
     "@prisma/client": "^6.1.0",
+    "@vercel/blob": "^2.8.0",
     "dotenv": "^16.4.5",
     "mammoth": "^1.8.0",
     "next": "^15.1.0",
@@ -26,6 +26,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@playwright/cli": "^0.1.20",
     "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "^22.10.2",
     "@types/pdf-parse": "^1.1.4",

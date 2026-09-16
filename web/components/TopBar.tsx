@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
+import { Logo } from "./Logo";
 
 const NAV_LINKS = [
   { href: "/", label: "Courses" },
@@ -22,15 +23,17 @@ export function TopBar() {
     <header className="topbar">
       <div className="brand-nav">
         <Link href="/" className="brand">
-          AI Syllabus Assistant
+          <Logo size={26} />
         </Link>
-        <nav className="nav-links">
-          {NAV_LINKS.map(({ href, label }) => (
-            <Link key={href} href={href} className={pathname === href ? "active" : undefined}>
-              {label}
-            </Link>
-          ))}
-        </nav>
+        {status === "authenticated" && (
+          <nav className="nav-links">
+            {NAV_LINKS.map(({ href, label }) => (
+              <Link key={href} href={href} className={pathname === href ? "active" : undefined}>
+                {label}
+              </Link>
+            ))}
+          </nav>
+        )}
       </div>
       <div className="user-form">
         {status === "authenticated" && session.user?.email && (

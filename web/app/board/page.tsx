@@ -6,6 +6,7 @@ import { useAuthGate } from "@/lib/useAuthGate";
 import { api } from "@/lib/api";
 import { formatDue } from "@/lib/dates";
 import { ITEM_STATUSES, type ItemStatus, type ItemWithCourse } from "@/lib/types";
+import { ITEM_TYPE_TAG, itemTypeLabel } from "@/lib/uiColors";
 
 const COLUMN_LABELS: Record<ItemStatus, string> = {
   not_started: "Not started",
@@ -94,7 +95,12 @@ export default function BoardPage() {
                     <Link href={`/courses/${item.course_id}`}>{item.course_code}</Link>
                   </div>
                   <div className="board-card-name">{item.name}</div>
-                  <div className="muted">{formatDue(item)}</div>
+                  <span className={`tag ${ITEM_TYPE_TAG[item.type]}`}>
+                    {itemTypeLabel(item.type)}
+                  </span>
+                  <div className="muted" style={{ marginTop: "0.35rem" }}>
+                    {formatDue(item)}
+                  </div>
                   <select
                     value={item.status}
                     onChange={(e) => moveItem(item.id, e.target.value as ItemStatus)}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getProviders, signIn, useSession, type ClientSafeProvider } from "next-auth/react";
+import { LogoMark } from "@/components/Logo";
 
 export default function SignInPage() {
   const { data: session } = useSession();
@@ -42,15 +43,18 @@ export default function SignInPage() {
 
   return (
     <div className="mx-auto flex max-w-sm flex-col gap-6 rounded-2xl border border-gray-200 bg-white p-8 shadow-sm mt-12 mb-12">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Sign in</h1>
-        <p className="mt-1 text-sm text-gray-500">AI Syllabus Assistant</p>
+      <div className="flex flex-col items-center gap-3 text-center">
+        <LogoMark size={40} />
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Sign in</h1>
+          <p className="mt-1 text-sm text-gray-500">Studently — AI syllabus assistant</p>
+        </div>
       </div>
 
       {providers?.google && (
         <button
           onClick={() => signIn("google")}
-          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50"
+          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6C5CE7]/40"
         >
           Continue with Google
         </button>
@@ -65,11 +69,11 @@ export default function SignInPage() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
             required
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[#6C5CE7] focus:outline-none focus:ring-2 focus:ring-[#6C5CE7]/20"
           />
           <button
             type="submit"
-            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+            className="rounded-md bg-[#6C5CE7] px-4 py-2 text-sm font-medium text-white hover:bg-[#5B4BD1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6C5CE7]/40"
           >
             Send magic link
           </button>

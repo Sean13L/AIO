@@ -62,9 +62,9 @@ export default function UploadPage() {
       {error && <p className="error">{error}</p>}
 
       {result && (
-        <div className="card">
-          <p>
-            Imported {result.itemsCreated} item{result.itemsCreated === 1 ? "" : "s"} and{" "}
+        <div className="card" style={{ borderColor: "var(--color-success)" }}>
+          <p className="success" style={{ marginBottom: "0.75rem" }}>
+            ✓ Imported {result.itemsCreated} item{result.itemsCreated === 1 ? "" : "s"} and{" "}
             {result.lecturesCreated} lecture{result.lecturesCreated === 1 ? "" : "s"}.
           </p>
           <Link href={`/courses/${result.courseId}`}>

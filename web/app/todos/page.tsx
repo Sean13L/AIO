@@ -100,7 +100,13 @@ export default function TodosPage() {
       {todos === null ? (
         <p className="muted">Loading…</p>
       ) : todos.length === 0 ? (
-        <p className="muted">Nothing on your list yet.</p>
+        <div className="empty-state">
+          <span className="empty-state-icon" aria-hidden="true">
+            ✅
+          </span>
+          <h3>Nothing on your list</h3>
+          <p>Add a quick task above — this list is separate from your structured deadlines.</p>
+        </div>
       ) : (
         <ul className="todo-list">
           {todos.map((todo) => (

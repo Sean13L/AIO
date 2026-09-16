@@ -6,6 +6,7 @@ import { useAuthGate } from "@/lib/useAuthGate";
 import { api } from "@/lib/api";
 import { formatDue, monthLabel } from "@/lib/dates";
 import { ITEM_STATUSES, type ItemStatus, type ItemWithCourse } from "@/lib/types";
+import { ITEM_TYPE_TAG, itemTypeLabel } from "@/lib/uiColors";
 
 export default function TimelinePage() {
   const { email, ready } = useAuthGate();
@@ -55,7 +56,14 @@ export default function TimelinePage() {
     return (
       <div>
         <h1>Timeline</h1>
-        <p className="muted">No deadlines yet — add items from a course page.</p>
+        <p className="muted">All deadlines across every course, by due date.</p>
+        <div className="empty-state">
+          <span className="empty-state-icon" aria-hidden="true">
+            📅
+          </span>
+          <h3>No deadlines yet</h3>
+          <p>Add items from a course page, or upload a syllabus to extract them automatically.</p>
+        </div>
       </div>
     );
   }
@@ -100,7 +108,11 @@ export default function TimelinePage() {
                     <Link href={`/courses/${item.course_id}`}>{item.course_code}</Link>
                   </td>
                   <td>{item.name}</td>
-                  <td>{item.type}</td>
+                  <td>
+                    <span className={`tag ${ITEM_TYPE_TAG[item.type]}`}>
+                      {itemTypeLabel(item.type)}
+                    </span>
+                  </td>
                   <td>{item.weight ?? "—"}</td>
                   <td>
                     <select

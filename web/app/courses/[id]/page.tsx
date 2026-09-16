@@ -14,6 +14,7 @@ import {
   type Lecture,
 } from "@/lib/types";
 import { formatDue, splitDueAt } from "@/lib/dates";
+import { ITEM_TYPE_TAG, PREVIEW_STATUS_TAG, itemTypeLabel } from "@/lib/uiColors";
 
 const PREVIEW_STATUS_LABELS: Record<Lecture["preview_status"], string> = {
   not_generated: "Not generated",
@@ -251,7 +252,13 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
       {items === null ? (
         <p className="muted">Loading…</p>
       ) : items.length === 0 ? (
-        <p className="muted">No items yet — add one above.</p>
+        <div className="empty-state">
+          <span className="empty-state-icon" aria-hidden="true">
+            📌
+          </span>
+          <h3>No items yet</h3>
+          <p>Add a deadline above — or upload this course&apos;s syllabus to extract them.</p>
+        </div>
       ) : (
         <div className="table-scroll">
         <table>
@@ -337,7 +344,11 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
               ) : (
                 <tr key={item.id}>
                   <td>{item.name}</td>
-                  <td>{item.type}</td>
+                  <td>
+                    <span className={`tag ${ITEM_TYPE_TAG[item.type]}`}>
+                      {itemTypeLabel(item.type)}
+                    </span>
+                  </td>
                   <td>{formatDue(item)}</td>
                   <td>{item.weight ?? "—"}</td>
                   <td>
@@ -353,7 +364,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
                     </select>
                   </td>
                   <td>
-                    <span className="badge">{item.source}</span>
+                    <span className="tag tag-slate">{item.source}</span>
                   </td>
                   <td>
                     <button className="secondary" onClick={() => startEdit(item)}>
@@ -375,10 +386,16 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
       {lectures === null ? (
         <p className="muted">Loading…</p>
       ) : lectures.length === 0 ? (
-        <p className="muted">
-          No lectures yet — these come from the syllabus&apos;s week-by-week schedule once you{" "}
-          <Link href="/upload">upload one</Link>.
-        </p>
+        <div className="empty-state">
+          <span className="empty-state-icon" aria-hidden="true">
+            🎓
+          </span>
+          <h3>No lectures yet</h3>
+          <p>
+            These come from the syllabus&apos;s week-by-week schedule once you{" "}
+            <Link href="/upload">upload one</Link>.
+          </p>
+        </div>
       ) : (
         <div className="table-scroll">
         <table>
@@ -397,7 +414,11 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
                 <td>{lecture.week_number ?? "—"}</td>
                 <td>{formatDue({ due_at: lecture.scheduled_at, is_datetime: true })}</td>
                 <td>{lecture.topics ?? "—"}</td>
-                <td>{PREVIEW_STATUS_LABELS[lecture.preview_status]}</td>
+                <td>
+                  <span className={`tag ${PREVIEW_STATUS_TAG[lecture.preview_status]}`}>
+                    {PREVIEW_STATUS_LABELS[lecture.preview_status]}
+                  </span>
+                </td>
                 <td>
                   <Link href={`/courses/${courseId}/lectures/${lecture.id}`}>Open</Link>
                 </td>

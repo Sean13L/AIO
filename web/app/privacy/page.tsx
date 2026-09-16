@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — AI Syllabus Assistant",
+  title: "Privacy Policy — Studently",
 };
 
 export default function PrivacyPage() {
@@ -11,8 +11,9 @@ export default function PrivacyPage() {
       <p className="muted">Last updated: 2026-09-15</p>
 
       <p>
-        AI Syllabus Assistant is a personal tool for extracting and organizing course syllabus
-        information. This page explains what data it collects, why, and how it&apos;s handled.
+        Studently (AI Syllabus Assistant) is a personal tool for extracting and organizing course
+        syllabus information. This page explains what data it collects, why, and how it&apos;s
+        handled.
       </p>
 
       <h2>What we collect</h2>
