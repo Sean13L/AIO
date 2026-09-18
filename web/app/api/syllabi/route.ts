@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/session";
 import { ingestSyllabus } from "@/lib/ingestSyllabus";
 import { uploadFile } from "@/lib/storage";
+import { assertAllowedUpload, SYLLABUS_EXTENSIONS, SYLLABUS_MAX_BYTES } from "@/lib/uploadValidation";
 
 export async function POST(req: NextRequest) {
   const userId = await getCurrentUserId();
@@ -23,6 +24,10 @@ export async function POST(req: NextRequest) {
 
   try {
     if (file instanceof File) {
+      assertAllowedUpload(file, {
+        allowedExtensions: SYLLABUS_EXTENSIONS,
+        maxBytes: SYLLABUS_MAX_BYTES,
+      });
       const buffer = Buffer.from(await file.arrayBuffer());
 
       // Archived purely for traceability (syllabi.file_url) — the actual

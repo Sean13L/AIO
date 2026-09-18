@@ -10,7 +10,8 @@ import { generatePreview } from "@/lib/preview/generatePreview";
 // invocations when CRON_SECRET is set — verify it so this can't be
 // triggered by anyone who finds the URL. Locally/in CI, where CRON_SECRET
 // is typically unset, the check is skipped so this stays testable without
-// needing the header.
+// needing the header — but that skip is scoped to non-production so an
+// unset CRON_SECRET can never leave this open on a real deployment.
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   if (secret) {
@@ -18,6 +19,9 @@ export async function GET(req: NextRequest) {
     if (auth !== `Bearer ${secret}`) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+  } else if (process.env.NODE_ENV === "production") {
+    console.error("[generate-previews cron] CRON_SECRET is not set in production — refusing to run unauthenticated.");
+    return NextResponse.json({ error: "Not configured" }, { status: 503 });
   }
 
   const leadHours = Number(process.env.PREVIEW_LEAD_HOURS ?? 48);

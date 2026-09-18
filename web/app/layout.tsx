@@ -29,6 +29,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <footer className="site-footer">
             <span>© {new Date().getFullYear()} Studently</span>
             <Link href="/privacy">Privacy</Link>
+            <Link href="/terms">Terms</Link>
+            <Link href="/cookies">Cookies</Link>
+            <a href="mailto:sean.le3131@gmail.com">Contact</a>
           </footer>
         </AuthSessionProvider>
       </body>

@@ -12,7 +12,10 @@
   --color-border-strong: #d4d4e2;
   --color-text: #16161f;
   --color-text-muted: #64647a;
-  --color-text-faint: #9696a8;
+  /* #717188, not the lighter #9696a8 it started as — that failed WCAG AA
+     (2.8:1) against both --color-bg and --color-surface; this hits ~4.6-4.8:1
+     on both, keeping the same hue family. */
+  --color-text-faint: #717188;
 
   --color-primary: #6c5ce7;
   --color-primary-hover: #5b4bd1;
@@ -20,7 +23,10 @@
   --color-primary-light: #efecfd;
   --color-on-primary: #ffffff;
 
-  --color-danger: #dc3d5a;
+  /* #cf2f4c, not the lighter #dc3d5a it started as — that read 4.32:1 on
+     white, just under the 4.5:1 AA threshold for normal-size text (e.g.
+     .error). This clears 5:1. */
+  --color-danger: #cf2f4c;
   --color-danger-hover: #c22e49;
   --color-danger-light: #fdeef1;
 

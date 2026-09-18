@@ -110,6 +110,18 @@ export default function SignInPage() {
       )}
 
       {providers === null && <p className="text-sm text-gray-500">Loading sign-in options…</p>}
+
+      <p className="text-center text-xs text-gray-400">
+        By continuing, you agree to our{" "}
+        <a href="/terms" className="underline hover:text-gray-600">
+          Terms
+        </a>{" "}
+        and{" "}
+        <a href="/privacy" className="underline hover:text-gray-600">
+          Privacy Policy
+        </a>
+        .
+      </p>
     </div>
   );
 }

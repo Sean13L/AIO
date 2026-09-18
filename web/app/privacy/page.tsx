@@ -8,7 +8,7 @@ export default function PrivacyPage() {
   return (
     <div>
       <h1>Privacy Policy</h1>
-      <p className="muted">Last updated: 2026-09-15</p>
+      <p className="muted">Last updated: 2026-09-18</p>
 
       <p>
         Studently (AI Syllabus Assistant) is a personal tool for extracting and organizing course
@@ -40,7 +40,7 @@ export default function PrivacyPage() {
 
       <h2>How we use it</h2>
       <ul>
-        <li>To extract structured data from your syllabus using the Claude API.</li>
+        <li>To extract structured data from your syllabus using the Gemini API.</li>
         <li>
           To display your courses, deadlines, and lectures, and to generate lecture pre-review
           content.
@@ -60,7 +60,7 @@ export default function PrivacyPage() {
       <ul>
         <li>Neon — database hosting</li>
         <li>Vercel — app hosting and file storage</li>
-        <li>Anthropic (Claude API) — syllabus text extraction and lecture preview generation</li>
+        <li>Google (Gemini API) — syllabus text extraction and lecture preview generation</li>
         <li>Google — sign-in, and Calendar API if you connect your calendar</li>
         <li>Resend — magic-link email delivery</li>
       </ul>
@@ -83,6 +83,23 @@ export default function PrivacyPage() {
         Each account&apos;s courses, deadlines, and files are private to that account. The only
         sharing feature is an optional, read-only calendar subscription link that you choose to
         share with others.
+      </p>
+
+      <h2>Cookies</h2>
+      <p>
+        We only use strictly-necessary cookies: one to keep you signed in, and a short-lived one
+        used only during the Google Calendar connection flow to prevent cross-site request
+        forgery. Neither is used for tracking or advertising, and no consent banner is shown
+        because no optional/tracking cookies are set. See our{" "}
+        <a href="/cookies">Cookie Policy</a> for details.
+      </p>
+
+      <h2>Children&apos;s privacy</h2>
+      <p>
+        Studently is intended for students old enough to independently manage their own course
+        planning (typically high school age and up) and is not directed at children under 13. We
+        don&apos;t knowingly collect data from children under 13; if you believe a child has
+        created an account, contact us at the email below and we&apos;ll delete it.
       </p>
 
       <h2>Contact</h2>

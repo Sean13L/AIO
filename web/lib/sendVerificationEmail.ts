@@ -18,6 +18,7 @@ export async function sendVerificationRequest({
 }) {
   const apiKey = process.env.RESEND_API_KEY;
   const from = provider.from ?? process.env.EMAIL_FROM ?? "onboarding@resend.dev";
+  const privacyUrl = `${process.env.NEXTAUTH_URL ?? "http://localhost:3000"}/privacy`;
 
   if (!apiKey) {
     console.warn(
@@ -37,7 +38,7 @@ export async function sendVerificationRequest({
       from,
       to: identifier,
       subject: "Sign in to AI Syllabus Assistant",
-      html: `<p>Click the link below to sign in:</p><p><a href="${url}">${url}</a></p><p>If you didn't request this, you can ignore this email.</p>`,
+      html: `<p>Click the link below to sign in:</p><p><a href="${url}">${url}</a></p><p>If you didn't request this, you can ignore this email.</p><p style="color:#9696a8;font-size:12px;margin-top:24px">Studently (AI Syllabus Assistant) — this is a one-time sign-in email, not a subscription. <a href="${privacyUrl}" style="color:#9696a8">Privacy Policy</a></p>`,
     }),
   });
 

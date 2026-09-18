@@ -3,8 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/session";
 import { deleteFile, filenameFromFileUrl, uploadFile } from "@/lib/storage";
-
-const MAX_FILE_SIZE = 25 * 1024 * 1024;
+import { assertAllowedUpload, SLIDES_EXTENSIONS, SLIDES_MAX_BYTES } from "@/lib/uploadValidation";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const userId = await getCurrentUserId();
@@ -24,8 +23,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       { status: 400 }
     );
   }
-  if (file.size > MAX_FILE_SIZE) {
-    return NextResponse.json({ error: "File too large (max 25MB)" }, { status: 400 });
+  try {
+    assertAllowedUpload(file, { allowedExtensions: SLIDES_EXTENSIONS, maxBytes: SLIDES_MAX_BYTES });
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 400 });
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
