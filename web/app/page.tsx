@@ -70,25 +70,105 @@ export default function CoursesPage() {
   if (!email) {
     return (
       <div>
-        <div className="home-hero">
+        <div className="home-hero full-bleed">
           <div className="home-hero-glow" aria-hidden="true" />
-          <LogoMark size={56} />
-          <h1>Your syllabus, turned into a semester you can actually plan around</h1>
+          <span className="eyebrow">AI-Powered Syllabus Intelligence</span>
+          <h1>
+            Turn your syllabus into a{" "}
+            <span className="gradient-text">semester you can actually plan around</span>
+          </h1>
           <p className="lede">
             Upload a course syllabus and Studdy reads it with AI, then builds a live calendar,
             deadline tracker, and lecture pre-review for every course — automatically.
           </p>
           <div className="actions">
             <Link href="/auth/signin">
-              <button type="button">Sign in to get started</button>
+              <button type="button">Sign in to get started →</button>
             </Link>
+            <a href="#how-it-works">
+              <button type="button" className="ghost">
+                See how it works
+              </button>
+            </a>
+          </div>
+
+          <div className="mock-card">
+            <div className="mock-card-header">
+              <span className="mock-badge">CS135 — This week</span>
+              <LogoMark size={22} />
+            </div>
+            <div className="mock-row">
+              <span className="mock-dot" style={{ background: "#7c9bff" }} />
+              <div>
+                <div className="mock-row-title">Problem Set 3</div>
+                <div className="mock-row-sub">Due Thu, Oct 8 at 11:59 PM</div>
+              </div>
+              <span className="mock-tag" style={{ background: "rgba(124,138,255,0.15)", color: "#a9b6ff" }}>
+                Assignment
+              </span>
+            </div>
+            <div className="mock-row">
+              <span className="mock-dot" style={{ background: "#c7a6ff" }} />
+              <div>
+                <div className="mock-row-title">Lecture 12 — Recursion</div>
+                <div className="mock-row-sub">Tue &amp; Thu, 1:30 PM · Pre-review ready</div>
+              </div>
+              <span className="mock-tag" style={{ background: "rgba(199,166,255,0.15)", color: "#dcc9ff" }}>
+                Lecture
+              </span>
+            </div>
+            <div className="mock-row">
+              <span className="mock-dot" style={{ background: "#f5b567" }} />
+              <div>
+                <div className="mock-row-title">Midterm Exam</div>
+                <div className="mock-row-sub">Mon, Oct 20 at 2:00 PM</div>
+              </div>
+              <span className="mock-tag" style={{ background: "rgba(245,181,103,0.15)", color: "#f5c98c" }}>
+                Midterm
+              </span>
+            </div>
           </div>
         </div>
 
-        <h2 className="home-section-title">Everything a syllabus PDF buries, surfaced</h2>
-        <p className="muted home-section-subtitle">
-          One upload extracts what matters — no manual data entry.
-        </p>
+        <div id="how-it-works" className="section-head" style={{ marginTop: "3.5rem" }}>
+          <span className="eyebrow">Get Started In</span>
+          <h2>Four simple steps</h2>
+        </div>
+        <div className="steps">
+          <div className="step">
+            <div className="step-num">1</div>
+            <div>
+              <h3>Upload your syllabus</h3>
+              <p>A PDF, a DOCX, or just pasted text — however you have it.</p>
+            </div>
+          </div>
+          <div className="step">
+            <div className="step-num">2</div>
+            <div>
+              <h3>AI extracts every deadline</h3>
+              <p>Grading weights, policies, assignments, exams, and the full lecture schedule.</p>
+            </div>
+          </div>
+          <div className="step">
+            <div className="step-num">3</div>
+            <div>
+              <h3>Your calendar builds itself</h3>
+              <p>Every date organized automatically — no manual entry, nothing to miss.</p>
+            </div>
+          </div>
+          <div className="step">
+            <div className="step-num">4</div>
+            <div>
+              <h3>Stay ahead all semester</h3>
+              <p>Pre-lecture briefs, a kanban board, and a running to-do list, all in sync.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="section-head" style={{ marginTop: "3.5rem" }}>
+          <span className="eyebrow">Everything A Syllabus PDF Buries</span>
+          <h2>Surfaced, automatically</h2>
+        </div>
         <div className="feature-grid">
           <div className="feature-card feature-card-blue">
             <span className="feature-icon-circle" aria-hidden="true">
@@ -132,10 +212,15 @@ export default function CoursesPage() {
           </div>
         </div>
 
-        <div className="home-hero" style={{ paddingTop: "1rem", paddingBottom: "2rem" }}>
-          <Link href="/auth/signin">
-            <button type="button">Sign in with email or Google</button>
-          </Link>
+        <div className="home-cta full-bleed" style={{ marginTop: "3.5rem" }}>
+          <div className="home-cta-glow" aria-hidden="true" />
+          <div className="home-cta-inner">
+            <h2>Stop losing track of deadlines</h2>
+            <p>Free to use — sign in with email or Google and upload your first syllabus in under a minute.</p>
+            <Link href="/auth/signin">
+              <button type="button">Sign in with email or Google</button>
+            </Link>
+          </div>
         </div>
       </div>
     );
