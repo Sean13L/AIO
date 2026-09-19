@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Cookie Policy — Studently",
+  title: "Cookie Policy — Studdy",
 };
 
 export default function CookiesPage() {
@@ -11,7 +11,7 @@ export default function CookiesPage() {
       <p className="muted">Last updated: 2026-09-18</p>
 
       <p>
-        Studently sets only two cookies, both strictly necessary for the app to function — neither
+        Studdy sets only two cookies, both strictly necessary for the app to function — neither
         is used for tracking, analytics, or advertising, which is why no cookie consent banner is
         shown.
       </p>

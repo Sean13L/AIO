@@ -76,7 +76,7 @@ export default function CoursesPage() {
           <LogoMark size={56} />
           <h1>Your syllabus, turned into a semester you can actually plan around</h1>
           <p className="lede">
-            Upload a course syllabus and Studently reads it with AI, then builds a live calendar,
+            Upload a course syllabus and Studdy reads it with AI, then builds a live calendar,
             deadline tracker, and lecture pre-review for every course — automatically.
           </p>
           <div className="actions">
@@ -194,7 +194,7 @@ export default function CoursesPage() {
             🗂️
           </span>
           <h3>No courses yet</h3>
-          <p>Add one above, or upload a syllabus and let Studently fill this in for you.</p>
+          <p>Add one above, or upload a syllabus and let Studdy fill this in for you.</p>
           <div className="actions">
             <Link href="/upload">
               <button type="button">Upload a syllabus</button>

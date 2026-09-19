@@ -38,7 +38,7 @@ export async function sendVerificationRequest({
       from,
       to: identifier,
       subject: "Sign in to AI Syllabus Assistant",
-      html: `<p>Click the link below to sign in:</p><p><a href="${url}">${url}</a></p><p>If you didn't request this, you can ignore this email.</p><p style="color:#9696a8;font-size:12px;margin-top:24px">Studently (AI Syllabus Assistant) — this is a one-time sign-in email, not a subscription. <a href="${privacyUrl}" style="color:#9696a8">Privacy Policy</a></p>`,
+      html: `<p>Click the link below to sign in:</p><p><a href="${url}">${url}</a></p><p>If you didn't request this, you can ignore this email.</p><p style="color:#717188;font-size:12px;margin-top:24px">Studdy (AI Syllabus Assistant) — this is a one-time sign-in email, not a subscription. <a href="${privacyUrl}" style="color:#717188">Privacy Policy</a></p>`,
     }),
   });
 

@@ -8,9 +8,9 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "Studently — AI Syllabus Assistant",
+  title: "Studdy — AI Syllabus Assistant",
   description:
-    "Upload a syllabus and Studently turns it into a live calendar, deadline tracker, and lecture pre-review — organized automatically.",
+    "Upload a syllabus and Studdy turns it into a live calendar, deadline tracker, and lecture pre-review — organized automatically.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -27,7 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </main>
           <footer className="site-footer">
-            <span>© {new Date().getFullYear()} Studently</span>
+            <span>© {new Date().getFullYear()} Studdy</span>
             <Link href="/privacy">Privacy</Link>
             <Link href="/terms">Terms</Link>
             <Link href="/cookies">Cookies</Link>

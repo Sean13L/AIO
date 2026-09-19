@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — Studently",
+  title: "Privacy Policy — Studdy",
 };
 
 export default function PrivacyPage() {
@@ -11,7 +11,7 @@ export default function PrivacyPage() {
       <p className="muted">Last updated: 2026-09-18</p>
 
       <p>
-        Studently (AI Syllabus Assistant) is a personal tool for extracting and organizing course
+        Studdy (AI Syllabus Assistant) is a personal tool for extracting and organizing course
         syllabus information. This page explains what data it collects, why, and how it&apos;s
         handled.
       </p>
@@ -96,7 +96,7 @@ export default function PrivacyPage() {
 
       <h2>Children&apos;s privacy</h2>
       <p>
-        Studently is intended for students old enough to independently manage their own course
+        Studdy is intended for students old enough to independently manage their own course
         planning (typically high school age and up) and is not directed at children under 13. We
         don&apos;t knowingly collect data from children under 13; if you believe a child has
         created an account, contact us at the email below and we&apos;ll delete it.

@@ -68,7 +68,7 @@ function SignInForm() {
         <LogoMark size={40} />
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900">Sign in</h1>
-          <p className="mt-1 text-sm text-gray-500">Studently — AI syllabus assistant</p>
+          <p className="mt-1 text-sm text-gray-500">Studdy — AI syllabus assistant</p>
         </div>
       </div>
 
@@ -81,7 +81,7 @@ function SignInForm() {
       {providers?.google && (
         <button
           onClick={() => signIn("google")}
-          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6C5CE7]/40"
+          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E40AF]/40"
         >
           Continue with Google
         </button>
@@ -96,11 +96,11 @@ function SignInForm() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
             required
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[#6C5CE7] focus:outline-none focus:ring-2 focus:ring-[#6C5CE7]/20"
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[#1E40AF] focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20"
           />
           <button
             type="submit"
-            className="rounded-md bg-[#6C5CE7] px-4 py-2 text-sm font-medium text-white hover:bg-[#5B4BD1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6C5CE7]/40"
+            className="rounded-md bg-[#1E40AF] px-4 py-2 text-sm font-medium text-white hover:bg-[#1E3A8A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E40AF]/40"
           >
             Send magic link
           </button>

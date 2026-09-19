@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — Studently",
+  title: "Terms of Service — Studdy",
 };
 
 export default function TermsPage() {
@@ -11,13 +11,13 @@ export default function TermsPage() {
       <p className="muted">Last updated: 2026-09-18</p>
 
       <p>
-        These terms cover your use of Studently (AI Syllabus Assistant). By creating an account or
+        These terms cover your use of Studdy (AI Syllabus Assistant). By creating an account or
         using the app, you agree to them.
       </p>
 
       <h2>What the service is</h2>
       <p>
-        Studently reads a course syllabus you upload or paste, extracts deadlines, grading, and
+        Studdy reads a course syllabus you upload or paste, extracts deadlines, grading, and
         lecture schedule information with the help of an AI model, and organizes it into a
         calendar and dashboard for you. It&apos;s a personal planning tool, not an official record
         of your course requirements.
@@ -49,7 +49,7 @@ export default function TermsPage() {
 
       <h2>No cost to use</h2>
       <p>
-        Studently is currently free to use, with no paid plans, subscriptions, or in-app purchases
+        Studdy is currently free to use, with no paid plans, subscriptions, or in-app purchases
         — nothing to bill, refund, or cancel.
       </p>
 
