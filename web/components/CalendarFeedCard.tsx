@@ -43,7 +43,7 @@ export function CalendarFeedCard() {
     const status = searchParams.get("google_calendar");
     if (status === "connected" || status === "error") {
       setGoogleStatus(status);
-      router.replace("/", { scroll: false });
+      router.replace("/calendar", { scroll: false });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);

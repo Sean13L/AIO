@@ -10,8 +10,8 @@ import {
 
 const STATE_COOKIE = "google_calendar_oauth_state";
 
-function redirectHome(req: NextRequest, status: "connected" | "error") {
-  const url = new URL("/", req.nextUrl.origin);
+function redirectToCalendar(req: NextRequest, status: "connected" | "error") {
+  const url = new URL("/calendar", req.nextUrl.origin);
   url.searchParams.set("google_calendar", status);
   return NextResponse.redirect(url);
 }
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 
   const res = code && state && cookieState && state === cookieState
     ? await handleSuccess(req, userId, code)
-    : redirectHome(req, "error");
+    : redirectToCalendar(req, "error");
 
   res.cookies.delete(STATE_COOKIE);
   return res;
@@ -64,9 +64,9 @@ async function handleSuccess(req: NextRequest, userId: string, code: string) {
     }
 
     await syncUserCalendarToGoogle(userId);
-    return redirectHome(req, "connected");
+    return redirectToCalendar(req, "connected");
   } catch (err) {
     console.error("[google calendar callback]", err);
-    return redirectHome(req, "error");
+    return redirectToCalendar(req, "error");
   }
 }

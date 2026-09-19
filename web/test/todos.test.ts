@@ -86,6 +86,71 @@ describe.skipIf(!hasDb)("Todos API routes (requires DATABASE_URL)", () => {
     expect(await afterDeleteRes.json()).toEqual([]);
   });
 
+  it("supports an optional deadline: set on create, edit, clear, and sorts dated-before-undated", async () => {
+    const { GET, POST } = await import("@/app/api/todos/route");
+    const { PATCH } = await import("@/app/api/todos/[id]/route");
+
+    const undated = await POST(
+      new NextRequest("http://localhost/api/todos", {
+        method: "POST",
+        body: JSON.stringify({ title: "Someday task" }),
+      })
+    );
+    const undatedBody = await undated.json();
+    expect(undatedBody.due_at).toBeNull();
+    expect(undatedBody.is_datetime).toBe(false);
+
+    const dated = await POST(
+      new NextRequest("http://localhost/api/todos", {
+        method: "POST",
+        body: JSON.stringify({ title: "Email TA", due_date: "2026-10-05", due_time: "14:00" }),
+      })
+    );
+    const datedBody = await dated.json();
+    expect(datedBody.due_at).toBe("2026-10-05T14:00:00.000Z");
+    expect(datedBody.is_datetime).toBe(true);
+
+    const allDay = await POST(
+      new NextRequest("http://localhost/api/todos", {
+        method: "POST",
+        body: JSON.stringify({ title: "Return book", due_date: "2026-10-01", due_time: null }),
+      })
+    );
+    const allDayBody = await allDay.json();
+    expect(allDayBody.due_at).toBe("2026-10-01T00:00:00.000Z");
+    expect(allDayBody.is_datetime).toBe(false);
+
+    // Dated todos sorted soonest-first, undated todos after.
+    const list = await (await GET()).json();
+    const titles = list.map((t: { title: string }) => t.title);
+    expect(titles.slice(0, 2)).toEqual(["Return book", "Email TA"]);
+    expect(titles.slice(2)).toContain("Someday task");
+
+    // A plain "mark done" PATCH doesn't touch an existing deadline.
+    const markDone = await PATCH(
+      new NextRequest("http://localhost/api/todos/x", {
+        method: "PATCH",
+        body: JSON.stringify({ done: true }),
+      }),
+      { params: Promise.resolve({ id: datedBody.id }) }
+    );
+    expect((await markDone.json()).due_at).toBe("2026-10-05T14:00:00.000Z");
+
+    // Explicitly clearing the deadline sets it back to null.
+    const cleared = await PATCH(
+      new NextRequest("http://localhost/api/todos/x", {
+        method: "PATCH",
+        body: JSON.stringify({ due_date: null }),
+      }),
+      { params: Promise.resolve({ id: datedBody.id }) }
+    );
+    const clearedBody = await cleared.json();
+    expect(clearedBody.due_at).toBeNull();
+    expect(clearedBody.is_datetime).toBe(false);
+
+    await prisma.todos.deleteMany({ where: { id: { in: [undatedBody.id, datedBody.id, allDayBody.id] } } });
+  });
+
   it("401s with no session", async () => {
     const originalUserId = mockSession.userId;
     mockSession.userId = null as unknown as string;

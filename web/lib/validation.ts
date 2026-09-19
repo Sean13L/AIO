@@ -33,13 +33,21 @@ export const itemUpdateSchema = z
     message: "due_date and due_time must be provided together (use null for an all-day item)",
   });
 
+// due_date/due_time are both optional (unlike items, where due_date is
+// required) — a todo may have no deadline at all. When due_date is given,
+// due_time follows the same convention as items: null means all-day, a
+// HH:MM string means a specific time.
 export const todoCreateSchema = z.object({
   title: z.string().min(1),
+  due_date: dateOnly.nullable().optional(),
+  due_time: timeOnly.nullable().optional(),
 });
 
 export const todoUpdateSchema = z.object({
   title: z.string().min(1).optional(),
   done: z.boolean().optional(),
+  due_date: dateOnly.nullable().optional(),
+  due_time: timeOnly.nullable().optional(),
 });
 
 export const extracurricularInputSchema = z.object({

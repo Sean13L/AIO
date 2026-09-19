@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useAuthGate } from "@/lib/useAuthGate";
 import { api } from "@/lib/api";
 import type { ItemWithCourse, LectureWithCourse } from "@/lib/types";
+import { CalendarFeedCard } from "@/components/CalendarFeedCard";
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTH_LABELS = [
@@ -107,10 +108,14 @@ export default function CalendarPage() {
     <div>
       <h1>Calendar</h1>
       <p className="muted">
-        Every extracted date across all your courses. For an external calendar app instead, see
-        the subscribe link on the <Link href="/">Courses</Link> page.
+        Every extracted date across all your courses, plus subscribe/export options for Google,
+        Outlook, or Apple Calendar below.
       </p>
       {error && <p className="error">{error}</p>}
+
+      <Suspense fallback={null}>
+        <CalendarFeedCard />
+      </Suspense>
 
       <div className="calendar-nav">
         <button className="secondary" onClick={goPrev}>

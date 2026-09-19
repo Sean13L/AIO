@@ -158,10 +158,21 @@ export const api = {
 
   listTodos: () => request<Todo[]>("/api/todos"),
 
-  createTodo: (title: string) =>
-    request<Todo>("/api/todos", { method: "POST", body: JSON.stringify({ title }) }),
+  createTodo: (title: string, deadline?: { due_date: string; due_time: string | null }) =>
+    request<Todo>("/api/todos", {
+      method: "POST",
+      body: JSON.stringify({ title, ...deadline }),
+    }),
 
-  updateTodo: (todoId: string, update: { title?: string; done?: boolean }) =>
+  updateTodo: (
+    todoId: string,
+    update: {
+      title?: string;
+      done?: boolean;
+      due_date?: string | null;
+      due_time?: string | null;
+    }
+  ) =>
     request<Todo>(`/api/todos/${todoId}`, {
       method: "PATCH",
       body: JSON.stringify(update),

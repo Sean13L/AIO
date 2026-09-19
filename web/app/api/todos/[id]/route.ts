@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/session";
 import { todoUpdateSchema } from "@/lib/validation";
+import { toTimestamp } from "@/lib/timestamp";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const userId = await getCurrentUserId();
@@ -13,9 +14,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
+  // due_date absent from the body: leave the deadline untouched (a plain
+  // "mark done" PATCH shouldn't wipe it). due_date present (string or
+  // explicit null): set or clear the deadline. due_time only matters when
+  // due_date is a string.
+  const { title, done, due_date, due_time } = parsed.data;
+  const data: Parameters<typeof prisma.todos.updateMany>[0]["data"] = { title, done };
+  if (due_date !== undefined) {
+    data.due_at = due_date ? toTimestamp(due_date, due_time ?? null) : null;
+    data.is_datetime = Boolean(due_date && due_time);
+  }
+
   const result = await prisma.todos.updateMany({
     where: { id, user_id: userId },
-    data: parsed.data,
+    data,
   });
   if (result.count === 0) {
     return NextResponse.json({ error: "Todo not found" }, { status: 404 });

@@ -35,6 +35,7 @@ Logo is an inline SVG mark (`web/components/Logo.tsx`, also `web/app/icon.svg` f
   - If instant sync matters more than universal support, the alternative is a direct **Google Calendar API** (OAuth) push integration — instant updates, but Google-only and requires the user to connect their account.
   - Reasonable default: ship the `.ics` feed first (works everywhere, no auth needed), and treat direct Google API push as a v2 enhancement if instant sync turns out to matter.
   - **Shipped, owner-only:** the account owner can connect their own Google Calendar (`app/api/calendar-feed/google/authorize` + `.../callback`, `lib/calendar/googleCalendar.ts`) for instant push of their own items/lectures. A shared recipient (parent, study partner) still gets the `.ics` link only — each recipient OAuth-connecting their own calendar was scoped out as a bigger follow-up (would need an auth flow for people with no account in the app).
+  - The subscribe/export UI (`components/CalendarFeedCard.tsx` — feed URL, recipient list, Google Calendar connect) lives on `/calendar`, not the courses page — moved there 2026-09-20 since it's calendar functionality, not course management. The Google OAuth callback redirects back to `/calendar`.
 - Each calendar event should link back to the originating assignment/quiz record, not just exist as a bare event.
 - **Lecture events:** scheduled lectures also appear on the calendar as timed events (they have a fixed class slot, so they're never all-day). Each lecture event links to that session's dedicated pre-review page — see Pre-Lecture Content Review below.
 
@@ -65,7 +66,7 @@ The app's data model should mirror the structure already validated in Notion:
   - Slides (file, added once the user uploads them for that session)
   - Pre-Review Page (the dedicated linked page holding the generated preview — see Pre-Lecture Content Review)
   - Preview status (not generated / generated / viewed)
-- **To Do List** — a lighter, non-syllabus-linked running task list, separate from the structured deadline items.
+- **To Do List** — a lighter, non-syllabus-linked running task list, separate from the structured deadline items. Each todo can optionally carry its own deadline (`due_at` + `is_datetime`, same all-day-vs-timed convention as items — added 2026-09-20, Apple Reminders-style: dated and undated tasks coexist in the same list, sorted dated-soonest-first then undated). Deliberately *not* wired into the `.ics` feed or Google Calendar sync — those stay scoped to the structured, syllabus-derived items/lectures; todos remain the separate lighter list even once dated.
 - **Extracurriculars** — freeform space for side projects/activities outside coursework, not tied to the grading/deadline schema.
 - Multiple views on the items table: by course, by due date (timeline), by status (kanban-style board) — matching what Notion offers natively.
 
