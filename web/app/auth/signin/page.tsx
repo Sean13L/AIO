@@ -1,18 +1,39 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getProviders, signIn, useSession, type ClientSafeProvider } from "next-auth/react";
 import { LogoMark } from "@/components/Logo";
 
-export default function SignInPage() {
+// NextAuth redirects back here with ?error=<code> on a failed sign-in
+// instead of throwing — without reading it, a failure (e.g. clicking
+// "Continue with Google") just silently bounces back to this same page
+// with zero indication anything went wrong, which reads as "the button is
+// broken" rather than as an error.
+const ERROR_MESSAGES: Record<string, string> = {
+  OAuthAccountNotLinked:
+    "This email is already registered with a different sign-in method. Try the magic link below instead, or contact support to link your Google account.",
+  OAuthSignin: "Couldn't start the Google sign-in flow. Try again.",
+  OAuthCallback: "Google sign-in didn't complete. Try again.",
+  OAuthCreateAccount: "Couldn't create an account from your Google sign-in. Try again.",
+  AccessDenied: "Access was denied by Google.",
+  Default: "Sign-in failed. Try again, or use a different sign-in method below.",
+};
+
+function SignInForm() {
   const { data: session } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [providers, setProviders] = useState<Record<string, ClientSafeProvider> | null>(null);
   const [email, setEmail] = useState("");
   const [devEmail, setDevEmail] = useState("");
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [devError, setDevError] = useState<string | null>(null);
+
+  const oauthErrorCode = searchParams.get("error");
+  const oauthError = oauthErrorCode
+    ? ERROR_MESSAGES[oauthErrorCode] ?? ERROR_MESSAGES.Default
+    : null;
 
   useEffect(() => {
     getProviders().then(setProviders);
@@ -50,6 +71,12 @@ export default function SignInPage() {
           <p className="mt-1 text-sm text-gray-500">Studently — AI syllabus assistant</p>
         </div>
       </div>
+
+      {oauthError && (
+        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+          {oauthError}
+        </p>
+      )}
 
       {providers?.google && (
         <button
@@ -123,5 +150,13 @@ export default function SignInPage() {
         .
       </p>
     </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignInForm />
+    </Suspense>
   );
 }

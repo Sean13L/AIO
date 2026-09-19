@@ -13,6 +13,16 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      // Without this, NextAuth refuses to sign a user in with Google if a
+      // User row with that email already exists but has no Google Account
+      // linked yet (e.g. the user's first sign-in was via the magic-link
+      // provider) — it fails silently with ?error=OAuthAccountNotLinked
+      // instead of linking. Safe here specifically because every provider
+      // in this app already requires proving control of that exact mailbox
+      // (Google's own verified email, or clicking a magic link sent to
+      // it) — there's no provider in the mix with an unverified/
+      // self-asserted email that this could let an attacker exploit.
+      allowDangerousEmailAccountLinking: true,
     })
   );
 }
