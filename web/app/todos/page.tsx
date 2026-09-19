@@ -57,9 +57,13 @@ export default function TodosPage() {
           : undefined
       );
       setTitle("");
-      setHasDeadline(false);
+      // hasDeadline/hasTime deliberately NOT reset — they stay checked
+      // across additions until the user unchecks them, since adding
+      // several deadlined tasks in a row is the common case. Only the
+      // entered date/time (and the calendar toggle, which isn't a
+      // yes/no default the same way) reset, since those are unlikely to
+      // repeat verbatim for the next task.
       setDueDate("");
-      setHasTime(false);
       setDueTime("");
       setShowOnCalendar(false);
       await refresh();
