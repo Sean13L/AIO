@@ -18,13 +18,17 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   // "storage hiccup shouldn't block the delete" precedent as the file
   // cleanup in app/api/courses/[id]/route.ts.
   if (target.target_type === "google_oauth") {
-    const [items, lectures] = await Promise.all([
+    const [items, lectures, todos] = await Promise.all([
       prisma.items.findMany({ where: { courses: { user_id: userId } }, select: { id: true } }),
       prisma.lectures.findMany({ where: { courses: { user_id: userId } }, select: { id: true } }),
+      prisma.todos.findMany({
+        where: { user_id: userId, show_on_calendar: true },
+        select: { id: true },
+      }),
     ]);
     await deleteAllEventsForTarget(
       target,
-      [...items, ...lectures].map((record) => record.id)
+      [...items, ...lectures, ...todos].map((record) => record.id)
     );
   }
 

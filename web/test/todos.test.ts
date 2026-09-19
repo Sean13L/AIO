@@ -151,6 +151,69 @@ describe.skipIf(!hasDb)("Todos API routes (requires DATABASE_URL)", () => {
     await prisma.todos.deleteMany({ where: { id: { in: [undatedBody.id, datedBody.id, allDayBody.id] } } });
   });
 
+  it("show_on_calendar requires a deadline, and clearing the deadline auto-clears it", async () => {
+    const { POST } = await import("@/app/api/todos/route");
+    const { PATCH } = await import("@/app/api/todos/[id]/route");
+
+    // Rejected outright: no due_date in the same request.
+    const rejected = await POST(
+      new NextRequest("http://localhost/api/todos", {
+        method: "POST",
+        body: JSON.stringify({ title: "No date", show_on_calendar: true }),
+      })
+    );
+    expect(rejected.status).toBe(400);
+
+    // Accepted alongside a due_date.
+    const created = await POST(
+      new NextRequest("http://localhost/api/todos", {
+        method: "POST",
+        body: JSON.stringify({
+          title: "Submit essay",
+          due_date: "2026-10-20",
+          due_time: null,
+          show_on_calendar: true,
+        }),
+      })
+    );
+    expect(created.status).toBe(201);
+    const todo = await created.json();
+    expect(todo.show_on_calendar).toBe(true);
+
+    // PATCH rejects turning it on with no resolved deadline.
+    const undated = await POST(
+      new NextRequest("http://localhost/api/todos", {
+        method: "POST",
+        body: JSON.stringify({ title: "Undated" }),
+      })
+    );
+    const undatedBody = await undated.json();
+    const rejectedPatch = await PATCH(
+      new NextRequest("http://localhost/api/todos/x", {
+        method: "PATCH",
+        body: JSON.stringify({ show_on_calendar: true }),
+      }),
+      { params: Promise.resolve({ id: undatedBody.id }) }
+    );
+    expect(rejectedPatch.status).toBe(400);
+
+    // Clearing the deadline on a todo that had the flag on doesn't error —
+    // it silently turns the flag off too (implicit, not a validation error).
+    const clearedRes = await PATCH(
+      new NextRequest("http://localhost/api/todos/x", {
+        method: "PATCH",
+        body: JSON.stringify({ due_date: null }),
+      }),
+      { params: Promise.resolve({ id: todo.id }) }
+    );
+    expect(clearedRes.status).toBe(200);
+    const clearedBody = await clearedRes.json();
+    expect(clearedBody.due_at).toBeNull();
+    expect(clearedBody.show_on_calendar).toBe(false);
+
+    await prisma.todos.deleteMany({ where: { id: { in: [todo.id, undatedBody.id] } } });
+  });
+
   it("401s with no session", async () => {
     const originalUserId = mockSession.userId;
     mockSession.userId = null as unknown as string;

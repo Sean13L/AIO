@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/session";
 import { todoCreateSchema } from "@/lib/validation";
 import { toTimestamp } from "@/lib/timestamp";
+import { syncUserCalendarToGoogle } from "@/lib/calendar/googleCalendar";
 
 export async function GET() {
   const userId = await getCurrentUserId();
@@ -27,14 +28,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { title, due_date, due_time } = parsed.data;
+  const { title, due_date, due_time, show_on_calendar } = parsed.data;
   const todo = await prisma.todos.create({
     data: {
       user_id: userId,
       title,
       due_at: due_date ? toTimestamp(due_date, due_time ?? null) : null,
       is_datetime: Boolean(due_date && due_time),
+      show_on_calendar: Boolean(show_on_calendar),
     },
   });
+  if (todo.show_on_calendar) await syncUserCalendarToGoogle(userId);
   return NextResponse.json(todo, { status: 201 });
 }

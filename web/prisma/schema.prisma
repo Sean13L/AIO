@@ -101,17 +101,21 @@ model syllabi {
 }
 
 model todos {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id     String    @db.Uuid
-  title       String
-  done        Boolean   @default(false)
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id          String    @db.Uuid
+  title            String
+  done             Boolean   @default(false)
   // Optional, unlike items.due_at — a todo is a lighter task that may or may
   // not carry a deadline (Apple Reminders-style: dated and undated items
   // coexist in the same list). null due_at means "no deadline set."
-  due_at      DateTime? @db.Timestamptz(6)
-  is_datetime Boolean   @default(false)
-  created_at  DateTime  @default(now()) @db.Timestamptz(6)
-  user        User      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  due_at           DateTime? @db.Timestamptz(6)
+  is_datetime      Boolean   @default(false)
+  // Opt-in per todo, off by default — only meaningful when due_at is set
+  // (enforced in the API layer, not here). Included on the .ics feed and
+  // Google Calendar sync alongside items/lectures when true.
+  show_on_calendar Boolean   @default(false)
+  created_at       DateTime  @default(now()) @db.Timestamptz(6)
+  user             User      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([user_id, due_at], map: "idx_todos_user_due_at")
 }

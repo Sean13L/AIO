@@ -36,18 +36,29 @@ export const itemUpdateSchema = z
 // due_date/due_time are both optional (unlike items, where due_date is
 // required) — a todo may have no deadline at all. When due_date is given,
 // due_time follows the same convention as items: null means all-day, a
-// HH:MM string means a specific time.
-export const todoCreateSchema = z.object({
-  title: z.string().min(1),
-  due_date: dateOnly.nullable().optional(),
-  due_time: timeOnly.nullable().optional(),
-});
+// HH:MM string means a specific time. show_on_calendar can only be true
+// alongside a due_date — a todo with no deadline has no date to place on a
+// calendar. The update schema can't fully enforce this (show_on_calendar
+// may be set true in a request that doesn't touch due_date, relying on a
+// deadline already saved), so the route checks the resolved state itself.
+export const todoCreateSchema = z
+  .object({
+    title: z.string().min(1),
+    due_date: dateOnly.nullable().optional(),
+    due_time: timeOnly.nullable().optional(),
+    show_on_calendar: z.boolean().optional(),
+  })
+  .refine((body) => !body.show_on_calendar || !!body.due_date, {
+    message: "show_on_calendar requires a due_date",
+    path: ["show_on_calendar"],
+  });
 
 export const todoUpdateSchema = z.object({
   title: z.string().min(1).optional(),
   done: z.boolean().optional(),
   due_date: dateOnly.nullable().optional(),
   due_time: timeOnly.nullable().optional(),
+  show_on_calendar: z.boolean().optional(),
 });
 
 export const extracurricularInputSchema = z.object({

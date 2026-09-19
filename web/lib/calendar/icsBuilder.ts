@@ -23,6 +23,13 @@ interface LectureForFeed {
   course_code: string;
 }
 
+interface TodoForFeed {
+  id: string;
+  title: string;
+  due_at: Date;
+  is_datetime: boolean;
+}
+
 const PRODID = "-//AI Syllabus Assistant//Calendar Feed//EN";
 
 // Placeholder durations: the schema/extraction don't capture how long a
@@ -30,6 +37,7 @@ const PRODID = "-//AI Syllabus Assistant//Calendar Feed//EN";
 // duration for calendar display rather than showing as instantaneous.
 const ITEM_DURATION_MINUTES = 30;
 const LECTURE_DURATION_MINUTES = 60;
+const TODO_DURATION_MINUTES = 30;
 
 // Fold lines over 75 octets per RFC 5545 §3.1 (continuation lines start
 // with a single space).
@@ -110,10 +118,11 @@ function buildEvent(event: VEventInput): string[] {
 export interface BuildIcsFeedOptions {
   items: ItemForFeed[];
   lectures: LectureForFeed[];
+  todos?: TodoForFeed[];
   webBaseUrl: string;
 }
 
-export function buildIcsFeed({ items, lectures, webBaseUrl }: BuildIcsFeedOptions): string {
+export function buildIcsFeed({ items, lectures, todos = [], webBaseUrl }: BuildIcsFeedOptions): string {
   const now = new Date();
   const lines: string[] = [
     "BEGIN:VCALENDAR",
@@ -160,6 +169,21 @@ export function buildIcsFeed({ items, lectures, webBaseUrl }: BuildIcsFeedOption
         // Calendar section ("Each lecture event links directly to its
         // pre-review page").
         url: `${webBaseUrl}/courses/${lecture.course_id}/lectures/${lecture.id}`,
+      })
+    );
+  }
+
+  for (const todo of todos) {
+    lines.push(
+      ...buildEvent({
+        uid: `todo-${todo.id}@ai-syllabus-assistant`,
+        dtstamp: now,
+        start: new Date(todo.due_at),
+        allDay: !todo.is_datetime,
+        durationMinutes: TODO_DURATION_MINUTES,
+        summary: todo.title,
+        // No dedicated todo detail page — links to the list itself.
+        url: `${webBaseUrl}/todos`,
       })
     );
   }

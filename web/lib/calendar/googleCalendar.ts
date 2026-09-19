@@ -192,6 +192,7 @@ async function deleteEvent(accessToken: string, eventId: string): Promise<void> 
 
 const ITEM_DURATION_MINUTES = 30;
 const LECTURE_DURATION_MINUTES = 60;
+const TODO_DURATION_MINUTES = 30;
 
 async function googleSyncTargetsForUser(userId: string): Promise<SyncTarget[]> {
   return prisma.calendar_sync_targets.findMany({
@@ -215,7 +216,7 @@ export async function syncUserCalendarToGoogle(userId: string): Promise<void> {
   if (targets.length === 0) return;
 
   const webBaseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
-  const [items, lectures] = await Promise.all([
+  const [items, lectures, todos] = await Promise.all([
     prisma.items.findMany({
       where: { courses: { user_id: userId } },
       include: { courses: { select: { course_code: true } } },
@@ -223,6 +224,13 @@ export async function syncUserCalendarToGoogle(userId: string): Promise<void> {
     prisma.lectures.findMany({
       where: { courses: { user_id: userId } },
       include: { courses: { select: { course_code: true } } },
+    }),
+    // Only todos the user has opted into showing on their calendar — see
+    // CLAUDE.md's To Do List note. due_at is never null here in practice
+    // (the API enforces show_on_calendar requires a deadline), but the
+    // filter is explicit rather than assumed.
+    prisma.todos.findMany({
+      where: { user_id: userId, show_on_calendar: true, due_at: { not: null } },
     }),
   ]);
 
@@ -248,6 +256,16 @@ export async function syncUserCalendarToGoogle(userId: string): Promise<void> {
       start: lecture.scheduled_at,
       allDay: false,
       durationMinutes: LECTURE_DURATION_MINUTES,
+    })),
+    ...todos.map((todo) => ({
+      eventId: eventIdForRecord(todo.id),
+      summary: todo.title,
+      description: null,
+      // No dedicated todo detail page — links to the list itself.
+      url: `${webBaseUrl}/todos`,
+      start: todo.due_at!,
+      allDay: !todo.is_datetime,
+      durationMinutes: TODO_DURATION_MINUTES,
     })),
   ];
 

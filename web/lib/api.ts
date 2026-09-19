@@ -158,7 +158,10 @@ export const api = {
 
   listTodos: () => request<Todo[]>("/api/todos"),
 
-  createTodo: (title: string, deadline?: { due_date: string; due_time: string | null }) =>
+  createTodo: (
+    title: string,
+    deadline?: { due_date: string; due_time: string | null; show_on_calendar?: boolean }
+  ) =>
     request<Todo>("/api/todos", {
       method: "POST",
       body: JSON.stringify({ title, ...deadline }),
@@ -171,6 +174,7 @@ export const api = {
       done?: boolean;
       due_date?: string | null;
       due_time?: string | null;
+      show_on_calendar?: boolean;
     }
   ) =>
     request<Todo>(`/api/todos/${todoId}`, {

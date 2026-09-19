@@ -18,7 +18,7 @@ export async function GET(
     return new NextResponse("Feed not found", { status: 404 });
   }
 
-  const [items, lectures] = await Promise.all([
+  const [items, lectures, todos] = await Promise.all([
     prisma.items.findMany({
       where: { courses: { user_id: feed.user_id } },
       include: { courses: { select: { course_code: true } } },
@@ -28,6 +28,10 @@ export async function GET(
       where: { courses: { user_id: feed.user_id } },
       include: { courses: { select: { course_code: true } } },
       orderBy: { scheduled_at: "asc" },
+    }),
+    prisma.todos.findMany({
+      where: { user_id: feed.user_id, show_on_calendar: true, due_at: { not: null } },
+      orderBy: { due_at: "asc" },
     }),
   ]);
 
@@ -44,6 +48,7 @@ export async function GET(
   const ics = buildIcsFeed({
     items: flattenedItems,
     lectures: flattenedLectures,
+    todos: todos.map((todo) => ({ ...todo, due_at: todo.due_at! })),
     webBaseUrl,
   });
 

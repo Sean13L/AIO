@@ -15,6 +15,7 @@ export default function TodosPage() {
   const [dueDate, setDueDate] = useState("");
   const [hasTime, setHasTime] = useState(false);
   const [dueTime, setDueTime] = useState("");
+  const [showOnCalendar, setShowOnCalendar] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -22,6 +23,7 @@ export default function TodosPage() {
   const [editDueDate, setEditDueDate] = useState("");
   const [editHasTime, setEditHasTime] = useState(false);
   const [editDueTime, setEditDueTime] = useState("");
+  const [editShowOnCalendar, setEditShowOnCalendar] = useState(false);
 
   async function refresh() {
     if (!email) return;
@@ -47,7 +49,11 @@ export default function TodosPage() {
       await api.createTodo(
         title.trim(),
         hasDeadline
-          ? { due_date: dueDate, due_time: hasTime ? dueTime || "00:00" : null }
+          ? {
+              due_date: dueDate,
+              due_time: hasTime ? dueTime || "00:00" : null,
+              show_on_calendar: showOnCalendar,
+            }
           : undefined
       );
       setTitle("");
@@ -55,6 +61,7 @@ export default function TodosPage() {
       setDueDate("");
       setHasTime(false);
       setDueTime("");
+      setShowOnCalendar(false);
       await refresh();
     } catch (err) {
       setError((err as Error).message);
@@ -94,6 +101,7 @@ export default function TodosPage() {
       setEditHasTime(false);
       setEditDueTime("");
     }
+    setEditShowOnCalendar(todo.show_on_calendar);
     setEditingId(todo.id);
   }
 
@@ -103,6 +111,7 @@ export default function TodosPage() {
       await api.updateTodo(todoId, {
         due_date: editDueDate,
         due_time: editHasTime ? editDueTime || "00:00" : null,
+        show_on_calendar: editShowOnCalendar,
       });
       setEditingId(null);
       await refresh();
@@ -186,6 +195,16 @@ export default function TodosPage() {
                 onChange={(e) => setDueTime(e.target.value)}
               />
             </label>
+            <label>
+              <span>
+                <input
+                  type="checkbox"
+                  checked={showOnCalendar}
+                  onChange={(e) => setShowOnCalendar(e.target.checked)}
+                />{" "}
+                Show on calendar
+              </span>
+            </label>
           </>
         )}
         <button type="submit" disabled={submitting}>
@@ -249,6 +268,16 @@ export default function TodosPage() {
                           onChange={(e) => setEditDueTime(e.target.value)}
                         />
                       </label>
+                      <label>
+                        <span>
+                          <input
+                            type="checkbox"
+                            checked={editShowOnCalendar}
+                            onChange={(e) => setEditShowOnCalendar(e.target.checked)}
+                          />{" "}
+                          Show on calendar
+                        </span>
+                      </label>
                       <button type="submit">Save</button>
                       <button type="button" className="ghost" onClick={() => setEditingId(null)}>
                         Cancel
@@ -271,6 +300,7 @@ export default function TodosPage() {
                           {formatDue({ due_at: todo.due_at, is_datetime: todo.is_datetime })}
                         </span>
                       )}
+                      {todo.show_on_calendar && <span className="tag tag-amber">On calendar</span>}
                       <button
                         type="button"
                         className="ghost"

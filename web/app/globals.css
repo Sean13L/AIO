@@ -704,6 +704,10 @@ form.inline label {
   background: var(--color-success-light);
 }
 
+.calendar-event-todo {
+  background: var(--color-warning-light);
+}
+
 /* ---------- To Do ---------- */
 
 .todo-list {

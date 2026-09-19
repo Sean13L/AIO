@@ -96,6 +96,19 @@ describe.skipIf(!hasDb)("Google Calendar push (requires DATABASE_URL)", () => {
     const lecture = await prisma.lectures.create({
       data: { course_id: courseId, scheduled_at: new Date("2026-09-14T10:00:00Z"), week_number: 1 },
     });
+    // Opted-in todo (pushed) alongside one that isn't (should not appear).
+    const flaggedTodo = await prisma.todos.create({
+      data: {
+        user_id: userId,
+        title: "Submit essay",
+        due_at: new Date("2026-09-25T00:00:00Z"),
+        is_datetime: false,
+        show_on_calendar: true,
+      },
+    });
+    const unflaggedTodo = await prisma.todos.create({
+      data: { user_id: userId, title: "Buy groceries", due_at: null },
+    });
     await createGoogleTarget();
 
     const calls: { url: string; method: string; body: unknown }[] = [];
@@ -136,8 +149,20 @@ describe.skipIf(!hasDb)("Google Calendar push (requires DATABASE_URL)", () => {
     );
     expect((lectureInsert!.body as { summary: string }).summary).toBe("CS135: Lecture (Week 1)");
 
+    const todoEventId = flaggedTodo.id.replace(/-/g, "");
+    const unflaggedTodoEventId = unflaggedTodo.id.replace(/-/g, "");
+    const todoInsert = calls.find(
+      (c) => c.method === "POST" && (c.body as { id: string }).id === todoEventId
+    );
+    expect(todoInsert).toBeTruthy();
+    expect((todoInsert!.body as { summary: string }).summary).toBe("Submit essay");
+    expect(calls.some((c) => (c.body as { id?: string } | undefined)?.id === unflaggedTodoEventId)).toBe(
+      false
+    );
+
     await prisma.items.delete({ where: { id: item.id } });
     await prisma.lectures.delete({ where: { id: lecture.id } });
+    await prisma.todos.deleteMany({ where: { id: { in: [flaggedTodo.id, unflaggedTodo.id] } } });
   });
 
   it("refreshes an expired access token before pushing, and persists the new one", async () => {

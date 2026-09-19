@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useAuthGate } from "@/lib/useAuthGate";
 import { api } from "@/lib/api";
-import type { ItemWithCourse, LectureWithCourse } from "@/lib/types";
+import type { ItemWithCourse, LectureWithCourse, Todo } from "@/lib/types";
 import { CalendarFeedCard } from "@/components/CalendarFeedCard";
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -38,6 +38,7 @@ export default function CalendarPage() {
   const { email, ready } = useAuthGate();
   const [items, setItems] = useState<ItemWithCourse[] | null>(null);
   const [lectures, setLectures] = useState<LectureWithCourse[] | null>(null);
+  const [todos, setTodos] = useState<Todo[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cursor, setCursor] = useState(() => {
     const now = new Date();
@@ -47,28 +48,45 @@ export default function CalendarPage() {
   useEffect(() => {
     if (!email) return;
     setError(null);
-    Promise.all([api.listAllItems(), api.listAllLectures()])
-      .then(([i, l]) => {
+    Promise.all([api.listAllItems(), api.listAllLectures(), api.listTodos()])
+      .then(([i, l, t]) => {
         setItems(i);
         setLectures(l);
+        setTodos(t);
       })
       .catch((err) => setError((err as Error).message));
   }, [email]);
 
+  // Only todos the user opted into showing here (see the "Show on
+  // calendar" toggle on /todos) — everything else on this page is always
+  // shown, but a todo needs both a deadline and this flag.
+  const calendarTodos = useMemo(
+    () => (todos ?? []).filter((t): t is Todo & { due_at: string } => t.show_on_calendar && !!t.due_at),
+    [todos]
+  );
+
   const eventsByDay = useMemo(() => {
-    const map = new Map<string, { items: ItemWithCourse[]; lectures: LectureWithCourse[] }>();
+    const map = new Map<
+      string,
+      { items: ItemWithCourse[]; lectures: LectureWithCourse[]; todos: (Todo & { due_at: string })[] }
+    >();
     for (const item of items ?? []) {
       const key = ymdUTC(item.due_at);
-      if (!map.has(key)) map.set(key, { items: [], lectures: [] });
+      if (!map.has(key)) map.set(key, { items: [], lectures: [], todos: [] });
       map.get(key)!.items.push(item);
     }
     for (const lecture of lectures ?? []) {
       const key = ymdUTC(lecture.scheduled_at);
-      if (!map.has(key)) map.set(key, { items: [], lectures: [] });
+      if (!map.has(key)) map.set(key, { items: [], lectures: [], todos: [] });
       map.get(key)!.lectures.push(lecture);
     }
+    for (const todo of calendarTodos) {
+      const key = ymdUTC(todo.due_at);
+      if (!map.has(key)) map.set(key, { items: [], lectures: [], todos: [] });
+      map.get(key)!.todos.push(todo);
+    }
     return map;
-  }, [items, lectures]);
+  }, [items, lectures, calendarTodos]);
 
   if (!ready) return null;
   if (!email) {
@@ -132,7 +150,7 @@ export default function CalendarPage() {
         </button>
       </div>
 
-      {items === null || lectures === null ? (
+      {items === null || lectures === null || todos === null ? (
         <p className="muted">Loading…</p>
       ) : (
         <div className="calendar-grid-scroll">
@@ -170,6 +188,17 @@ export default function CalendarPage() {
                     title="Lecture"
                   >
                     {hmUTC(lecture.scheduled_at)} {lecture.course_code}: Lecture
+                  </Link>
+                ))}
+                {dayEvents?.todos.map((todo) => (
+                  <Link
+                    key={todo.id}
+                    href="/todos"
+                    className="calendar-event calendar-event-todo"
+                    title={todo.title}
+                  >
+                    {todo.is_datetime ? `${hmUTC(todo.due_at)} ` : ""}
+                    {todo.title}
                   </Link>
                 ))}
               </div>

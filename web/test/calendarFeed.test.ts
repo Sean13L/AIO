@@ -58,6 +58,25 @@ describe.skipIf(!hasDb)("Calendar feed API routes (requires DATABASE_URL)", () =
         topics: "Introduction",
       },
     });
+    // Opted-in todo (should appear) alongside one that isn't (should not).
+    await prisma.todos.create({
+      data: {
+        user_id: mockSession.userId,
+        title: "Submit essay",
+        due_at: new Date("2026-10-25T00:00:00Z"),
+        is_datetime: false,
+        show_on_calendar: true,
+      },
+    });
+    await prisma.todos.create({
+      data: {
+        user_id: mockSession.userId,
+        title: "Buy groceries",
+        due_at: new Date("2026-09-21T00:00:00Z"),
+        is_datetime: false,
+        show_on_calendar: false,
+      },
+    });
 
     const { GET: getFeed } = await import("@/app/api/calendar-feed/route");
     const feedRes = await getFeed(new NextRequest("http://localhost/api/calendar-feed"));
@@ -86,6 +105,10 @@ describe.skipIf(!hasDb)("Calendar feed API routes (requires DATABASE_URL)", () =
     expect(body.replace(/\r\n /g, "")).toContain(
       `URL:http://localhost:3000/courses/${course.id}/lectures/${lecture.id}`
     );
+    // Only the todo with show_on_calendar: true is included.
+    expect(body).toContain("SUMMARY:Submit essay");
+    expect(body).toContain("DTSTART;VALUE=DATE:20261025");
+    expect(body).not.toContain("SUMMARY:Buy groceries");
 
     const badTokenRes = await getIcs(new NextRequest("http://localhost/calendar/bad.ics"), {
       params: Promise.resolve({ token: "not-a-real-token.ics" }),

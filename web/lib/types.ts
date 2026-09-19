@@ -83,6 +83,7 @@ export interface Todo {
   done: boolean;
   due_at: string | null;
   is_datetime: boolean;
+  show_on_calendar: boolean;
   created_at: string;
 }
 
