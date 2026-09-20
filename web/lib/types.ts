@@ -69,6 +69,8 @@ export interface Lecture {
   slides_url: string | null;
   preview_status: PreviewStatus;
   preview_content: string | null;
+  transcript: string | null;
+  transcript_summary: string | null;
   created_at: string;
 }
 

@@ -71,16 +71,22 @@ model items {
 }
 
 model lectures {
-  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  course_id       String         @db.Uuid
-  scheduled_at    DateTime       @db.Timestamptz(6)
-  week_number     Int?
-  topics          String?
-  slides_url      String?
-  preview_status  preview_status @default(not_generated)
-  preview_content String?
-  created_at      DateTime       @default(now()) @db.Timestamptz(6)
-  courses         courses        @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id                 String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  course_id          String         @db.Uuid
+  scheduled_at       DateTime       @db.Timestamptz(6)
+  week_number        Int?
+  topics             String?
+  slides_url         String?
+  preview_status     preview_status @default(not_generated)
+  preview_content    String?
+  // Accumulated from the browser's Web Speech API while a lecture is being
+  // recorded live (see LecturePage) — null until the first recording session
+  // is saved. Free text, not structured, since speech-to-text output has no
+  // natural schema beyond "what was said".
+  transcript         String?
+  transcript_summary String?
+  created_at         DateTime       @default(now()) @db.Timestamptz(6)
+  courses            courses        @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([course_id], map: "idx_lectures_course")
   @@index([scheduled_at], map: "idx_lectures_scheduled_at")

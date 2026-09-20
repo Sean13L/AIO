@@ -102,6 +102,17 @@ export const api = {
   generateLecturePreview: (lectureId: string) =>
     request<Lecture>(`/api/lectures/${lectureId}/generate-preview`, { method: "POST" }),
 
+  saveLectureTranscript: (lectureId: string, transcript: string | null) =>
+    request<Lecture>(`/api/lectures/${lectureId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ transcript }),
+    }),
+
+  generateLectureSummary: (lectureId: string) =>
+    request<Lecture & { usedMock: boolean }>(`/api/lectures/${lectureId}/generate-summary`, {
+      method: "POST",
+    }),
+
   // Bypasses the shared `request()` helper: file uploads need the browser
   // to set its own multipart Content-Type boundary, not our JSON default.
   uploadLectureSlides: async (lectureId: string, file: File): Promise<Lecture> => {

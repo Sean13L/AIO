@@ -120,6 +120,81 @@ describe.skipIf(!hasDb)("Lectures API routes (requires DATABASE_URL)", () => {
     await prisma.courses.delete({ where: { id: course.id } });
   });
 
+  it("saves a transcript via PATCH, then generates a summary from it (mock extractor)", async () => {
+    const course = await prisma.courses.create({
+      data: {
+        user_id: mockSession.userId,
+        course_code: "CS246",
+        course_name: "Object-Oriented Software Development",
+        semester: "1B",
+      },
+    });
+    const lecture = await prisma.lectures.create({
+      data: { course_id: course.id, scheduled_at: new Date("2026-09-08T14:00:00Z"), week_number: 1 },
+    });
+
+    const { PATCH } = await import("@/app/api/lectures/[id]/route");
+    const { POST: generateSummary } = await import(
+      "@/app/api/lectures/[id]/generate-summary/route"
+    );
+
+    // No transcript yet -> 400, not a crash.
+    const tooEarly = await generateSummary(
+      new NextRequest("http://localhost/api/lectures/x/generate-summary", { method: "POST" }),
+      { params: Promise.resolve({ id: lecture.id }) }
+    );
+    expect(tooEarly.status).toBe(400);
+
+    const patchReq = new NextRequest("http://localhost/api/lectures/x", {
+      method: "PATCH",
+      body: JSON.stringify({ transcript: "Today we covered smart pointers and RAII in depth." }),
+    });
+    const patched = await PATCH(patchReq, { params: Promise.resolve({ id: lecture.id }) });
+    expect(patched.status).toBe(200);
+    const patchedBody = await patched.json();
+    expect(patchedBody.transcript).toContain("smart pointers");
+
+    const summarized = await generateSummary(
+      new NextRequest("http://localhost/api/lectures/x/generate-summary", { method: "POST" }),
+      { params: Promise.resolve({ id: lecture.id }) }
+    );
+    expect(summarized.status).toBe(200);
+    const summaryBody = await summarized.json();
+    expect(summaryBody.usedMock).toBe(true);
+    expect(summaryBody.transcript_summary).toContain("CS246");
+
+    // Editing the transcript again invalidates the stale summary.
+    const repatched = await PATCH(
+      new NextRequest("http://localhost/api/lectures/x", {
+        method: "PATCH",
+        body: JSON.stringify({ transcript: "A different transcript entirely." }),
+      }),
+      { params: Promise.resolve({ id: lecture.id }) }
+    );
+    expect((await repatched.json()).transcript_summary).toBeNull();
+
+    // Clearing (null) is valid too, and 404s stay scoped to the owner.
+    const cleared = await PATCH(
+      new NextRequest("http://localhost/api/lectures/x", {
+        method: "PATCH",
+        body: JSON.stringify({ transcript: null }),
+      }),
+      { params: Promise.resolve({ id: lecture.id }) }
+    );
+    expect((await cleared.json()).transcript).toBeNull();
+
+    const badBody = await PATCH(
+      new NextRequest("http://localhost/api/lectures/x", {
+        method: "PATCH",
+        body: JSON.stringify({ transcript: 42 }),
+      }),
+      { params: Promise.resolve({ id: lecture.id }) }
+    );
+    expect(badBody.status).toBe(400);
+
+    await prisma.courses.delete({ where: { id: course.id } });
+  });
+
   it("lists all lectures across courses with course_code attached, and 404s for another user", async () => {
     const course1 = await prisma.courses.create({
       data: { user_id: mockSession.userId, course_code: "LIST-A", course_name: "Course A", semester: "1A" },
