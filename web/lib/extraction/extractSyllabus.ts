@@ -4,6 +4,7 @@ import {
   type SyllabusExtraction,
 } from "./schema";
 import { mockExtractSyllabus } from "./mockExtractSyllabus";
+import { generateContentWithFallback } from "../gemini";
 
 const TOOL_NAME = "record_syllabus_extraction";
 
@@ -177,7 +178,7 @@ export async function extractSyllabus({
 
   const client = new GoogleGenAI({ apiKey });
 
-  const response = await client.models.generateContent({
+  const response = await generateContentWithFallback(client, {
     model,
     contents: `Here is the syllabus text:\n\n${syllabusText}`,
     config: {

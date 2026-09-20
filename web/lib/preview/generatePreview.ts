@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { mockGeneratePreview } from "./mockGeneratePreview";
+import { generateContentWithFallback } from "../gemini";
 
 const SYSTEM_PROMPT = `You help a student prepare for an upcoming lecture. Given the syllabus's
 stated topics for this session and, if available, the actual slide content, write a short
@@ -46,7 +47,7 @@ export async function generatePreview({
       : "Slides have not been uploaded yet for this session.",
   ].join("\n\n");
 
-  const response = await client.models.generateContent({
+  const response = await generateContentWithFallback(client, {
     model,
     contents: userContent,
     config: { systemInstruction: SYSTEM_PROMPT },
