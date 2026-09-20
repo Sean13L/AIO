@@ -14,6 +14,7 @@ import {
   type Lecture,
 } from "@/lib/types";
 import { formatDue, splitDueAt } from "@/lib/dates";
+import { useTimeFormatPreference } from "@/lib/timeFormat";
 import {
   courseAccentKey,
   courseInitials,
@@ -51,6 +52,7 @@ const emptyForm: ItemFormState = {
 export default function CourseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: courseId } = use(params);
   const { email, ready } = useAuthGate();
+  const timeFormat = useTimeFormatPreference();
   const [course, setCourse] = useState<Course | null>(null);
   const [items, setItems] = useState<Item[] | null>(null);
   const [lectures, setLectures] = useState<Lecture[] | null>(null);
@@ -382,7 +384,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
                       {itemTypeLabel(item.type)}
                     </span>
                   </td>
-                  <td>{formatDue(item)}</td>
+                  <td>{formatDue(item, timeFormat)}</td>
                   <td>{item.weight ?? "—"}</td>
                   <td>
                     <select
@@ -445,7 +447,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
             {lectures.map((lecture) => (
               <tr key={lecture.id}>
                 <td>{lecture.week_number ?? "—"}</td>
-                <td>{formatDue({ due_at: lecture.scheduled_at, is_datetime: true })}</td>
+                <td>{formatDue({ due_at: lecture.scheduled_at, is_datetime: true }, timeFormat)}</td>
                 <td>{lecture.topics ?? "—"}</td>
                 <td>
                   <span className={`tag ${PREVIEW_STATUS_TAG[lecture.preview_status]}`}>

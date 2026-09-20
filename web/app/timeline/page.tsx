@@ -6,10 +6,12 @@ import { useAuthGate } from "@/lib/useAuthGate";
 import { api } from "@/lib/api";
 import { formatDue, monthLabel } from "@/lib/dates";
 import { ITEM_STATUSES, type ItemStatus, type ItemWithCourse } from "@/lib/types";
-import { ITEM_TYPE_TAG, itemTypeLabel } from "@/lib/uiColors";
+import { courseAccentKey, ITEM_TYPE_TAG, itemTypeLabel } from "@/lib/uiColors";
+import { useTimeFormatPreference } from "@/lib/timeFormat";
 
 export default function TimelinePage() {
   const { email, ready } = useAuthGate();
+  const timeFormat = useTimeFormatPreference();
   const [items, setItems] = useState<ItemWithCourse[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -103,9 +105,14 @@ export default function TimelinePage() {
             <tbody>
               {group.items.map((item) => (
                 <tr key={item.id}>
-                  <td>{formatDue(item)}</td>
+                  <td>{formatDue(item, timeFormat)}</td>
                   <td>
-                    <Link href={`/courses/${item.course_id}`}>{item.course_code}</Link>
+                    <Link
+                      href={`/courses/${item.course_id}`}
+                      style={{ color: `var(--tag-${courseAccentKey(item.course_code)}-text)` }}
+                    >
+                      {item.course_code}
+                    </Link>
                   </td>
                   <td>{item.name}</td>
                   <td>

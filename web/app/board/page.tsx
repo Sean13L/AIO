@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import { formatDue } from "@/lib/dates";
 import { ITEM_STATUSES, type ItemStatus, type ItemWithCourse } from "@/lib/types";
 import { courseAccentKey, ITEM_TYPE_TAG, itemTypeLabel } from "@/lib/uiColors";
+import { useTimeFormatPreference } from "@/lib/timeFormat";
 
 const COLUMN_LABELS: Record<ItemStatus, string> = {
   not_started: "Not started",
@@ -16,6 +17,7 @@ const COLUMN_LABELS: Record<ItemStatus, string> = {
 
 export default function BoardPage() {
   const { email, ready } = useAuthGate();
+  const timeFormat = useTimeFormatPreference();
   const [items, setItems] = useState<ItemWithCourse[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<ItemStatus | null>(null);
@@ -102,7 +104,7 @@ export default function BoardPage() {
                     {itemTypeLabel(item.type)}
                   </span>
                   <div className="muted" style={{ marginTop: "0.35rem" }}>
-                    {formatDue(item)}
+                    {formatDue(item, timeFormat)}
                   </div>
                   <select
                     value={item.status}

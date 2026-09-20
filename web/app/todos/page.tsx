@@ -6,9 +6,11 @@ import { useAuthGate } from "@/lib/useAuthGate";
 import { api } from "@/lib/api";
 import type { Todo } from "@/lib/types";
 import { formatDue, splitDueAt } from "@/lib/dates";
+import { useTimeFormatPreference } from "@/lib/timeFormat";
 
 export default function TodosPage() {
   const { email, ready } = useAuthGate();
+  const timeFormat = useTimeFormatPreference();
   const [todos, setTodos] = useState<Todo[] | null>(null);
   const [title, setTitle] = useState("");
   const [hasDeadline, setHasDeadline] = useState(false);
@@ -301,7 +303,10 @@ export default function TodosPage() {
                       {todo.due_at && (
                         <span className={overdue ? "error" : "muted"}>
                           {overdue ? "Overdue — " : ""}
-                          {formatDue({ due_at: todo.due_at, is_datetime: todo.is_datetime })}
+                          {formatDue(
+                            { due_at: todo.due_at, is_datetime: todo.is_datetime },
+                            timeFormat
+                          )}
                         </span>
                       )}
                       {todo.show_on_calendar && <span className="tag tag-amber">On calendar</span>}

@@ -8,6 +8,7 @@ import { formatDue } from "@/lib/dates";
 import type { Lecture } from "@/lib/types";
 import { PREVIEW_STATUS_TAG } from "@/lib/uiColors";
 import { useLectureTranscription } from "@/lib/useLectureTranscription";
+import { useTimeFormatPreference } from "@/lib/timeFormat";
 
 const PREVIEW_STATUS_LABELS: Record<Lecture["preview_status"], string> = {
   not_generated: "Not generated yet",
@@ -22,6 +23,7 @@ export default function LecturePage({
 }) {
   const { id: courseId, lectureId } = use(params);
   const { email, ready } = useAuthGate();
+  const timeFormat = useTimeFormatPreference();
   const [lecture, setLecture] = useState<Lecture | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -145,7 +147,9 @@ export default function LecturePage({
           {PREVIEW_STATUS_LABELS[lecture.preview_status]}
         </span>
       </h1>
-      <p className="muted">{formatDue({ due_at: lecture.scheduled_at, is_datetime: true })}</p>
+      <p className="muted">
+        {formatDue({ due_at: lecture.scheduled_at, is_datetime: true }, timeFormat)}
+      </p>
 
       <div className="card">
         <h2>Syllabus topics</h2>

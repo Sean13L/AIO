@@ -6,6 +6,8 @@ import { useAuthGate } from "@/lib/useAuthGate";
 import { api } from "@/lib/api";
 import type { ItemWithCourse, LectureWithCourse, Todo } from "@/lib/types";
 import { CalendarFeedCard } from "@/components/CalendarFeedCard";
+import { formatTime } from "@/lib/dates";
+import { useTimeFormatPreference, type TimeFormatPreference } from "@/lib/timeFormat";
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTH_LABELS = [
@@ -30,12 +32,13 @@ function ymdUTC(iso: string): string {
   return iso.slice(0, 10);
 }
 
-function hmUTC(iso: string): string {
-  return iso.slice(11, 16);
+function hmUTC(iso: string, timeFormat: TimeFormatPreference): string {
+  return formatTime(iso.slice(11, 16), timeFormat);
 }
 
 export default function CalendarPage() {
   const { email, ready } = useAuthGate();
+  const timeFormat = useTimeFormatPreference();
   const [items, setItems] = useState<ItemWithCourse[] | null>(null);
   const [lectures, setLectures] = useState<LectureWithCourse[] | null>(null);
   const [todos, setTodos] = useState<Todo[] | null>(null);
@@ -176,7 +179,7 @@ export default function CalendarPage() {
                     className="calendar-event calendar-event-item"
                     title={item.name}
                   >
-                    {item.is_datetime ? `${hmUTC(item.due_at)} ` : ""}
+                    {item.is_datetime ? `${hmUTC(item.due_at, timeFormat)} ` : ""}
                     {item.course_code}: {item.name}
                   </Link>
                 ))}
@@ -187,7 +190,7 @@ export default function CalendarPage() {
                     className="calendar-event calendar-event-lecture"
                     title="Lecture"
                   >
-                    {hmUTC(lecture.scheduled_at)} {lecture.course_code}: Lecture
+                    {hmUTC(lecture.scheduled_at, timeFormat)} {lecture.course_code}: Lecture
                   </Link>
                 ))}
                 {dayEvents?.todos.map((todo) => (
@@ -197,7 +200,7 @@ export default function CalendarPage() {
                     className="calendar-event calendar-event-todo"
                     title={todo.title}
                   >
-                    {todo.is_datetime ? `${hmUTC(todo.due_at)} ` : ""}
+                    {todo.is_datetime ? `${hmUTC(todo.due_at, timeFormat)} ` : ""}
                     {todo.title}
                   </Link>
                 ))}

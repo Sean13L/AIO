@@ -9,11 +9,21 @@ import {
   getStoredThemePreference,
   type ThemePreference,
 } from "@/lib/theme";
+import {
+  getStoredTimeFormatPreference,
+  setStoredTimeFormatPreference,
+  type TimeFormatPreference,
+} from "@/lib/timeFormat";
 
 const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
   { value: "light", label: "Light" },
   { value: "dark", label: "Dark" },
   { value: "system", label: "System" },
+];
+
+const TIME_FORMAT_OPTIONS: { value: TimeFormatPreference; label: string }[] = [
+  { value: "12h", label: "12-hour (2:30 PM)" },
+  { value: "24h", label: "24-hour (14:30)" },
 ];
 
 export default function SettingsPage() {
@@ -22,14 +32,23 @@ export default function SettingsPage() {
   // control's server-rendered markup matches the client's first render —
   // the real stored value is read in an effect, after mount.
   const [theme, setTheme] = useState<ThemePreference>("system");
+  // Same reasoning as theme above: starts at the app's pre-setting default
+  // (24h) so the server-rendered markup matches the client's first render.
+  const [timeFormat, setTimeFormat] = useState<TimeFormatPreference>("24h");
 
   useEffect(() => {
     setTheme(getStoredThemePreference());
+    setTimeFormat(getStoredTimeFormatPreference());
   }, []);
 
   function handleThemeChange(next: ThemePreference) {
     setTheme(next);
     applyThemePreference(next);
+  }
+
+  function handleTimeFormatChange(next: TimeFormatPreference) {
+    setTimeFormat(next);
+    setStoredTimeFormatPreference(next);
   }
 
   if (!ready) return null;
@@ -72,6 +91,27 @@ export default function SettingsPage() {
               aria-checked={theme === option.value}
               className={theme === option.value ? undefined : "secondary"}
               onClick={() => handleThemeChange(option.value)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="card">
+        <h2>Time format</h2>
+        <p className="muted" style={{ marginBottom: "1rem" }}>
+          Applies to every deadline, lecture, and calendar time shown across the app.
+        </p>
+        <div className="theme-switcher" role="radiogroup" aria-label="Time format">
+          {TIME_FORMAT_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              role="radio"
+              aria-checked={timeFormat === option.value}
+              className={timeFormat === option.value ? undefined : "secondary"}
+              onClick={() => handleTimeFormatChange(option.value)}
             >
               {option.label}
             </button>
