@@ -152,6 +152,36 @@ describe.skipIf(!hasDb)("Syllabus ingestion API route (requires DATABASE_URL)", 
     await prisma.courses.delete({ where: { id: result.courseId } });
   });
 
+  it("combines multiple uploaded files (and pasted text) into a single course", async () => {
+    const { POST } = await import("@/app/api/syllabi/route");
+    const formData = new FormData();
+    formData.append("file", new File([sampleSyllabus], "syllabus.txt", { type: "text/plain" }));
+    formData.append(
+      "file",
+      new File(["Final exam room addendum: DC 1350."], "exam-room-addendum.txt", {
+        type: "text/plain",
+      })
+    );
+    formData.append("text", "Office hours moved to Thursdays 3-4pm.");
+
+    const res = await POST(
+      new NextRequest("http://localhost/api/syllabi", { method: "POST", body: formData })
+    );
+    expect(res.status).toBe(201);
+    const result = await res.json();
+
+    const syllabus = await prisma.syllabi.findUnique({ where: { id: result.syllabusId } });
+    // Traceability field records every uploaded document's URL, comma-joined
+    // — two files went through storage (renamed to a UUID + original
+    // extension, per uploadFile's contract), plus the pasted-text placeholder.
+    const urls = syllabus?.file_url.split(", ") ?? [];
+    expect(urls.length).toBe(3);
+    expect(urls.filter((u) => u.startsWith("http://storage.test/files/syllabi/")).length).toBe(2);
+    expect(urls.some((u) => u.startsWith("pasted-text:"))).toBe(true);
+
+    await prisma.courses.delete({ where: { id: result.courseId } });
+  });
+
   it("400s with neither a file nor text", async () => {
     const { POST } = await import("@/app/api/syllabi/route");
     const res = await POST(

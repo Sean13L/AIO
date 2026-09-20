@@ -16,7 +16,7 @@ interface UploadResult {
 export default function UploadPage() {
   const { email, ready } = useAuthGate();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [fileName, setFileName] = useState<string | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [pastedText, setPastedText] = useState("");
   const [courses, setCourses] = useState<Course[] | null>(null);
   const [courseId, setCourseId] = useState("");
@@ -30,29 +30,35 @@ export default function UploadPage() {
   }, [email]);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setFileName(e.target.files?.[0]?.name ?? null);
+    const picked = Array.from(e.target.files ?? []);
+    // Additive: picking more files adds to the list rather than replacing
+    // it, so choosing the main syllabus and a supplemental doc in two
+    // separate picks both end up attached.
+    setFiles((prev) => [...prev, ...picked]);
+    e.target.value = "";
   }
 
-  function clearFile() {
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    setFileName(null);
+  function removeFile(index: number) {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const file = fileInputRef.current?.files?.[0];
-    if (!file && !pastedText.trim()) return;
+    if (files.length === 0 && !pastedText.trim()) return;
 
     setSubmitting(true);
     setError(null);
     setResult(null);
     try {
-      const res = file
-        ? await api.uploadSyllabus({ file, courseId: courseId || undefined })
-        : await api.uploadSyllabus({ text: pastedText, courseId: courseId || undefined });
+      const res = await api.uploadSyllabus({
+        files: files.length > 0 ? files : undefined,
+        text: pastedText.trim() || undefined,
+        courseId: courseId || undefined,
+      });
       setResult(res);
       setPastedText("");
-      clearFile();
+      setFiles([]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -76,7 +82,9 @@ export default function UploadPage() {
       <h1>Upload a syllabus</h1>
       <p className="muted">
         Upload a PDF, DOCX, or plain-text syllabus (or paste its text below) and it&apos;ll be
-        extracted into a course, its deadlines, and its lecture schedule automatically.
+        extracted into a course, its deadlines, and its lecture schedule automatically. Add more
+        files if there&apos;s supplemental info the syllabus itself doesn&apos;t cover — a separate
+        exam schedule, a lab-policy addendum — and they&apos;ll all be read together.
       </p>
       {error && <p className="error">{error}</p>}
 
@@ -113,43 +121,50 @@ export default function UploadPage() {
         <form onSubmit={handleSubmit}>
           <p>
             <label>
-              <strong>File</strong> (.pdf, .docx, .txt, .md)
+              <strong>Files</strong> (.pdf, .docx, .txt, .md — pick multiple, or add more in
+              another pick)
               <br />
               <input
                 ref={fileInputRef}
                 type="file"
                 accept=".pdf,.docx,.txt,.md"
+                multiple
                 onChange={handleFileChange}
-                style={{ display: fileName ? "none" : "inline-block" }}
               />
-              {fileName && (
-                <span
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "0.6rem",
-                    marginTop: "0.3rem",
-                  }}
-                >
-                  <span>{fileName}</span>
-                  <button type="button" className="secondary" onClick={clearFile}>
-                    Remove file
-                  </button>
-                </span>
-              )}
             </label>
+            {files.length > 0 && (
+              <ul style={{ marginTop: "0.6rem", listStyle: "none", padding: 0 }}>
+                {files.map((file, i) => (
+                  <li
+                    key={`${file.name}-${i}`}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "0.6rem",
+                      padding: "0.35rem 0",
+                    }}
+                  >
+                    <span>{file.name}</span>
+                    <button type="button" className="secondary" onClick={() => removeFile(i)}>
+                      Remove
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </p>
-          <p className="muted">— or —</p>
+          <p className="muted">— and/or —</p>
           <p>
             <label style={{ display: "block" }}>
-              <strong>Paste syllabus text</strong>
+              <strong>Paste text</strong> (main syllabus, or supplemental notes)
               <br />
               <textarea
                 value={pastedText}
                 onChange={(e) => setPastedText(e.target.value)}
                 rows={10}
                 style={{ width: "100%", marginTop: "0.4rem" }}
-                placeholder="Paste the full syllabus text here…"
+                placeholder="Paste syllabus or supplemental text here…"
               />
             </label>
           </p>

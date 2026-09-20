@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/session";
 import { ingestSyllabus } from "@/lib/ingestSyllabus";
+import type { SyllabusInput } from "@/lib/extraction/parseFile";
 import { uploadFile } from "@/lib/storage";
 import { assertAllowedUpload, SYLLABUS_EXTENSIONS, SYLLABUS_MAX_BYTES } from "@/lib/uploadValidation";
 
@@ -12,7 +13,10 @@ export async function POST(req: NextRequest) {
   if (!userId) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
 
   const formData = await req.formData();
-  const file = formData.get("file");
+  // Multiple files can be appended under the same "file" key — the main
+  // syllabus plus any supplemental documents (an addendum, a separate exam
+  // schedule) it doesn't cover.
+  const files = formData.getAll("file").filter((f): f is File => f instanceof File);
   const text = formData.get("text");
   const courseIdRaw = formData.get("course_id");
   const courseId = typeof courseIdRaw === "string" && courseIdRaw.trim() ? courseIdRaw : undefined;
@@ -23,7 +27,10 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    if (file instanceof File) {
+    const inputs: SyllabusInput[] = [];
+    const fileUrls: string[] = [];
+
+    for (const file of files) {
       assertAllowedUpload(file, {
         allowedExtensions: SYLLABUS_EXTENSIONS,
         maxBytes: SYLLABUS_MAX_BYTES,
@@ -32,36 +39,35 @@ export async function POST(req: NextRequest) {
 
       // Archived purely for traceability (syllabi.file_url) — the actual
       // text extraction below happens in-memory, right here, since it only
-      // needs this request's own upload and doesn't need anything persisted.
+      // needs this request's own uploads and doesn't need anything persisted.
       const { url } = await uploadFile(
         "syllabi",
         buffer,
         `${crypto.randomUUID()}${path.extname(file.name)}`
       );
-
-      const result = await ingestSyllabus({
-        userId,
-        fileUrl: url,
-        input: { kind: "file", buffer, fileName: file.name },
-        courseId,
-      });
-      return NextResponse.json(result, { status: 201 });
+      fileUrls.push(url);
+      inputs.push({ kind: "file", buffer, fileName: file.name });
     }
 
     if (typeof text === "string" && text.trim()) {
-      const result = await ingestSyllabus({
-        userId,
-        fileUrl: `pasted-text:${Date.now()}`,
-        input: { kind: "text", text },
-        courseId,
-      });
-      return NextResponse.json(result, { status: 201 });
+      inputs.push({ kind: "text", text });
+      fileUrls.push(`pasted-text:${Date.now()}`);
     }
 
-    return NextResponse.json(
-      { error: "Provide a 'file' upload or 'text' field with pasted syllabus text" },
-      { status: 400 }
-    );
+    if (inputs.length === 0) {
+      return NextResponse.json(
+        { error: "Provide at least one file upload or pasted text" },
+        { status: 400 }
+      );
+    }
+
+    const result = await ingestSyllabus({
+      userId,
+      fileUrl: fileUrls.join(", "),
+      inputs,
+      courseId,
+    });
+    return NextResponse.json(result, { status: 201 });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });

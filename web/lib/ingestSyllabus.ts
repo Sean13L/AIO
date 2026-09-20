@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
-import { extractRawText, type SyllabusInput } from "./extraction/parseFile";
+import { extractCombinedRawText, type SyllabusInput } from "./extraction/parseFile";
 import { extractSyllabus } from "./extraction/extractSyllabus";
 import type { SyllabusExtraction } from "./extraction/schema";
 import { toTimestamp } from "./timestamp";
@@ -8,8 +8,8 @@ import { syncUserCalendarToGoogle } from "./calendar/googleCalendar";
 
 export interface IngestSyllabusParams {
   userId: string;
-  fileUrl: string; // local path or "pasted-text:<timestamp>" — traceability only
-  input: SyllabusInput;
+  fileUrl: string; // local path(s) or "pasted-text:<timestamp>" — traceability only, joined with ", " when multiple documents were uploaded together
+  inputs: SyllabusInput[]; // the syllabus plus any supplemental documents uploaded alongside it
   // When set, the syllabus is attached to this existing course instead of
   // auto-matching/creating one by extracted course_code+semester. Caller
   // (the API route) is responsible for verifying it belongs to userId
@@ -30,10 +30,10 @@ export interface IngestSyllabusResult {
 export async function ingestSyllabus({
   userId,
   fileUrl,
-  input,
+  inputs,
   courseId,
 }: IngestSyllabusParams): Promise<IngestSyllabusResult> {
-  const rawText = await extractRawText(input);
+  const rawText = await extractCombinedRawText(inputs);
   const { extraction, usedMock } = await extractSyllabus({ syllabusText: rawText });
 
   const result = await prisma.$transaction(async (tx) => {
