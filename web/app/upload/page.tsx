@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuthGate } from "@/lib/useAuthGate";
 import { api } from "@/lib/api";
 import type { Course } from "@/lib/types";
@@ -13,13 +14,20 @@ interface UploadResult {
   usedMock: boolean;
 }
 
-export default function UploadPage() {
+function UploadForm() {
   const { email, ready } = useAuthGate();
+  const searchParams = useSearchParams();
+  // Pre-selects the course a "+ Add syllabus" link on a course page was
+  // clicked from, so uploading a syllabus for an existing course doesn't
+  // require re-picking it from the dropdown (and doesn't risk landing on
+  // a new auto-matched course instead, if the extracted course_code/semester
+  // don't happen to match this one exactly).
+  const preselectedCourseId = searchParams.get("course_id") ?? "";
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [pastedText, setPastedText] = useState("");
   const [courses, setCourses] = useState<Course[] | null>(null);
-  const [courseId, setCourseId] = useState("");
+  const [courseId, setCourseId] = useState(preselectedCourseId);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<UploadResult | null>(null);
@@ -77,6 +85,8 @@ export default function UploadPage() {
     );
   }
 
+  const preselectedCourse = courses?.find((c) => c.id === preselectedCourseId);
+
   return (
     <div>
       <h1>Upload a syllabus</h1>
@@ -86,6 +96,17 @@ export default function UploadPage() {
         files if there&apos;s supplemental info the syllabus itself doesn&apos;t cover — a separate
         exam schedule, a lab-policy addendum — and they&apos;ll all be read together.
       </p>
+      {preselectedCourseId && (
+        <p className="muted">
+          Adding to{" "}
+          <strong style={{ color: "var(--color-text)" }}>
+            {preselectedCourse
+              ? `${preselectedCourse.course_code} — ${preselectedCourse.course_name}`
+              : "the selected course"}
+          </strong>
+          .
+        </p>
+      )}
       {error && <p className="error">{error}</p>}
 
       {result && (
@@ -193,5 +214,13 @@ export default function UploadPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function UploadPage() {
+  return (
+    <Suspense fallback={null}>
+      <UploadForm />
+    </Suspense>
   );
 }

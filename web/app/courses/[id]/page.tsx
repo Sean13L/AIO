@@ -178,17 +178,32 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
       {error && <p className="error">{error}</p>}
 
       {course && (
-        <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
-          <span
-            className={`course-avatar avatar-${courseAccentKey(course.course_code)}`}
-            aria-hidden="true"
-          >
-            {courseInitials(course.course_code)}
-          </span>
-          <h1 style={{ margin: 0 }}>
-            {course.course_code} — {course.course_name}
-            {course.semester && <span className="badge">{course.semester}</span>}
-          </h1>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "0.85rem",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
+            <span
+              className={`course-avatar avatar-${courseAccentKey(course.course_code)}`}
+              aria-hidden="true"
+            >
+              {courseInitials(course.course_code)}
+            </span>
+            <h1 style={{ margin: 0 }}>
+              {course.course_code} — {course.course_name}
+              {course.semester && <span className="badge">{course.semester}</span>}
+            </h1>
+          </div>
+          <Link href={`/upload?course_id=${courseId}`}>
+            <button type="button" className="secondary">
+              + Add syllabus
+            </button>
+          </Link>
         </div>
       )}
 
@@ -271,7 +286,11 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
             📌
           </span>
           <h3>No items yet</h3>
-          <p>Add a deadline above — or upload this course&apos;s syllabus to extract them.</p>
+          <p>
+            Add a deadline above — or{" "}
+            <Link href={`/upload?course_id=${courseId}`}>upload this course&apos;s syllabus</Link>{" "}
+            to extract them.
+          </p>
         </div>
       ) : (
         <div className="table-scroll">
@@ -407,7 +426,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
           <h3>No lectures yet</h3>
           <p>
             These come from the syllabus&apos;s week-by-week schedule once you{" "}
-            <Link href="/upload">upload one</Link>.
+            <Link href={`/upload?course_id=${courseId}`}>upload one</Link>.
           </p>
         </div>
       ) : (
