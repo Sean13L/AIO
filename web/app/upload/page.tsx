@@ -140,7 +140,7 @@ function UploadForm() {
 
       <div className="card">
         <form onSubmit={handleSubmit}>
-          <p>
+          <div style={{ marginBottom: "1rem" }}>
             <label>
               <strong>Files</strong> (.pdf, .docx, .txt, .md — pick multiple, or add more in
               another pick)
@@ -174,7 +174,7 @@ function UploadForm() {
                 ))}
               </ul>
             )}
-          </p>
+          </div>
           <p className="muted">— and/or —</p>
           <p>
             <label style={{ display: "block" }}>
