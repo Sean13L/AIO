@@ -63,6 +63,23 @@
   --tag-green-bg: #e5f7ef;
   --tag-green-text: #158f66;
 
+  /* Solid course-accent colors (.avatar-*, .course-avatar-sm) — kept as
+     their own fixed tokens, equal to the light-theme --tag-*-text values
+     above, rather than reusing --tag-*-text directly. Avatars pair a solid
+     background with white foreground text, which only stays readable at
+     these specific (fairly dark/saturated) values — --tag-*-text itself
+     gets brightened for dark mode below (pastel tag chips need light text
+     on a dark chip instead), which would otherwise wash out every avatar's
+     contrast the moment dark mode is on. */
+  --avatar-blue: #1d5fd1;
+  --avatar-teal: #0f9488;
+  --avatar-amber: #b45309;
+  --avatar-rose: #be123c;
+  --avatar-violet: #6d28d9;
+  --avatar-pink: #b32e87;
+  --avatar-slate: #545a6b;
+  --avatar-green: #158f66;
+
   --radius-sm: 7px;
   --radius-md: 12px;
   --radius-lg: 18px;
@@ -93,6 +110,70 @@
   --glow-amber: rgba(217, 119, 6, 0.22);
 
   color-scheme: light;
+}
+
+/* ---------- Dark mode (Settings > Appearance) ---------- */
+/* Overrides only the content-area tokens — the dark "frame" tokens above
+   (--dark-*, used by the topbar/footer/marketing hero) are unaffected since
+   that chrome is already dark and stays dark regardless of this toggle; see
+   CLAUDE.md. Every "-light" chip/background token becomes a translucent
+   overlay of the same hue (reads as a dark tinted chip, not a pastel one),
+   paired with a brightened solid color for whatever text/border/icon sits
+   on top of it — kept as a consistent pattern so contrast holds everywhere
+   the pattern is reused (tags, calendar events, the "today" cell, buttons).
+   --avatar-* and --dark-* are deliberately absent here: avatars must stay
+   legible with a fixed white foreground regardless of theme, and the frame
+   tokens don't change with this toggle at all. */
+:root[data-theme="dark"] {
+  --color-bg: #10152b;
+  --color-bg-subtle: #171d38;
+  --color-surface: #1a2140;
+  --color-border: #2a3358;
+  --color-border-strong: #3a4570;
+  --color-text: #f3f4f9;
+  --color-text-muted: #a8b0d1;
+  --color-text-faint: #7c85ab;
+
+  --color-primary: #3b5bdb;
+  --color-primary-hover: #4c6ef5;
+  --color-primary-active: #2f4bc4;
+  --color-primary-light: rgba(59, 91, 219, 0.22);
+  --color-on-primary: #ffffff;
+
+  --color-danger: #fb7185;
+  --color-danger-hover: #f43f5e;
+  --color-danger-light: rgba(244, 63, 94, 0.18);
+
+  --color-success: #34d399;
+  --color-success-light: rgba(52, 211, 153, 0.16);
+  --color-warning: #fbbf24;
+  --color-warning-light: rgba(251, 191, 36, 0.16);
+  --color-info: #60a5fa;
+  --color-info-light: rgba(96, 165, 250, 0.18);
+
+  --tag-blue-bg: rgba(37, 99, 235, 0.18);
+  --tag-blue-text: #93c5fd;
+  --tag-teal-bg: rgba(20, 184, 166, 0.18);
+  --tag-teal-text: #5eead4;
+  --tag-amber-bg: rgba(245, 158, 11, 0.18);
+  --tag-amber-text: #fcd34d;
+  --tag-rose-bg: rgba(244, 63, 94, 0.18);
+  --tag-rose-text: #fda4af;
+  --tag-violet-bg: rgba(139, 92, 246, 0.18);
+  --tag-violet-text: #c4b5fd;
+  --tag-pink-bg: rgba(236, 72, 153, 0.18);
+  --tag-pink-text: #f9a8d4;
+  --tag-slate-bg: rgba(148, 163, 184, 0.18);
+  --tag-slate-text: #cbd5e1;
+  --tag-green-bg: rgba(16, 185, 129, 0.18);
+  --tag-green-text: #86efac;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.35), 0 16px 40px rgba(0, 0, 0, 0.45);
+  --shadow-focus: 0 0 0 3px rgba(59, 91, 219, 0.4);
+
+  color-scheme: dark;
 }
 
 /* ---------- Top accent bar ---------- */
@@ -289,16 +370,32 @@ textarea:focus-visible,
   flex-wrap: wrap;
 }
 
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.15rem;
+  height: 2.15rem;
+  border-radius: 50%;
+  color: var(--dark-text-muted);
+  transition: color var(--ease), background var(--ease);
+}
+
+.icon-button:hover {
+  color: var(--dark-text);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.icon-button.active {
+  color: var(--color-on-primary);
+  background: var(--color-primary);
+}
+
 .user-form input {
   padding: 0.4rem 0.6rem;
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm);
   min-width: 220px;
-}
-
-.current-user {
-  font-size: 0.82rem;
-  color: var(--dark-text-muted);
 }
 
 .container {
@@ -897,28 +994,36 @@ form.inline label {
 }
 
 .avatar-blue {
-  background: var(--tag-blue-text);
+  background: var(--avatar-blue);
 }
 .avatar-teal {
-  background: var(--tag-teal-text);
+  background: var(--avatar-teal);
 }
 .avatar-amber {
-  background: var(--tag-amber-text);
+  background: var(--avatar-amber);
 }
 .avatar-rose {
-  background: var(--tag-rose-text);
+  background: var(--avatar-rose);
 }
 .avatar-violet {
-  background: var(--tag-violet-text);
+  background: var(--avatar-violet);
 }
 .avatar-pink {
-  background: var(--tag-pink-text);
+  background: var(--avatar-pink);
 }
 .avatar-slate {
-  background: var(--tag-slate-text);
+  background: var(--avatar-slate);
 }
 .avatar-green {
-  background: var(--tag-green-text);
+  background: var(--avatar-green);
+}
+
+/* ---------- Settings ---------- */
+
+.theme-switcher {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 /* ---------- Badges (generic, low-emphasis) ---------- */

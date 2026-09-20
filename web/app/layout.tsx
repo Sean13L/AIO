@@ -3,6 +3,7 @@ import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import Link from "next/link";
 import { AuthSessionProvider } from "@/components/AuthSessionProvider";
 import { TopBar } from "@/components/TopBar";
+import { THEME_BOOTSTRAP_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -23,8 +24,18 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${plusJakarta.variable}`}>
+    <html
+      lang="en"
+      className={`${inter.variable} ${plusJakarta.variable}`}
+      // The bootstrap script sets data-theme on the client before paint, which
+      // will always differ from this server-rendered markup (no theme
+      // attribute) — expected, not a real mismatch, so don't warn about it.
+      suppressHydrationWarning
+    >
       <body>
+        {/* Runs before first paint so a saved dark-mode preference applies
+            immediately instead of flashing light-then-dark. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />
         <div className="top-accent-bar" aria-hidden="true" />
         <a href="#main-content" className="skip-link">
           Skip to content
