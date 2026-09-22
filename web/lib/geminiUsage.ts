@@ -22,10 +22,11 @@ export interface GeminiUsageResult {
 // Atomically records one Gemini-backed call attempt for this user today and
 // reports whether it's within the daily cap. Call this immediately before
 // actually invoking Gemini (extraction, preview generation, transcript
-// summary) — a single shared budget across all three, not one cap per
-// endpoint, since what's being protected is total Gemini spend/call volume
-// for the account, not any one feature. The upsert's increment is a single
-// atomic UPDATE, so concurrent requests can't race past the limit.
+// summary, study guide generation) — a single shared budget across all
+// four, not one cap per endpoint, since what's being protected is total
+// Gemini spend/call volume for the account, not any one feature. The
+// upsert's increment is a single atomic UPDATE, so concurrent requests
+// can't race past the limit.
 export async function recordGeminiCallAndCheckLimit(userId: string): Promise<GeminiUsageResult> {
   const limit = geminiDailyLimit();
   const date = todayUTC();
@@ -37,4 +38,10 @@ export async function recordGeminiCallAndCheckLimit(userId: string): Promise<Gem
   });
 
   return { allowed: usage.count <= limit, count: usage.count, limit };
+}
+
+// Shared across every route that enforces the cap, so the endpoint list in
+// the message can't drift out of sync between them.
+export function geminiUsageLimitMessage(limit: number): string {
+  return `Daily AI usage limit reached (${limit}/day across syllabus uploads, lecture previews, lecture summaries, and study guides). Try again after midnight UTC.`;
 }

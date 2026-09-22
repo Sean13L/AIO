@@ -95,3 +95,39 @@ export interface Extracurricular {
   content: string | null;
   created_at: string;
 }
+
+export interface StudyGuideSummary {
+  id: string;
+  title: string;
+  created_at: string;
+  used_mock: boolean;
+  lecture_count: number;
+}
+
+export interface StudyGuideSource {
+  lecture_id: string;
+  course_id: string;
+  course_code: string;
+  course_name: string;
+  week_number: number | null;
+  scheduled_at: string;
+  included_topics: boolean;
+  included_slides: boolean;
+  included_transcript: boolean;
+}
+
+export interface StudyGuideDetail {
+  id: string;
+  title: string;
+  content: string;
+  used_mock: boolean;
+  created_at: string;
+  sources: StudyGuideSource[];
+}
+
+export interface StudyGuideLectureSelection {
+  lecture_id: string;
+  include_topics: boolean;
+  include_slides: boolean;
+  include_transcript: boolean;
+}

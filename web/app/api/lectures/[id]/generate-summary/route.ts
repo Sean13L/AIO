@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/session";
 import { generateTranscriptSummary } from "@/lib/transcription/generateTranscriptSummary";
-import { recordGeminiCallAndCheckLimit } from "@/lib/geminiUsage";
+import { geminiUsageLimitMessage, recordGeminiCallAndCheckLimit } from "@/lib/geminiUsage";
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const userId = await getCurrentUserId();
@@ -23,12 +23,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
 
   const usage = await recordGeminiCallAndCheckLimit(userId);
   if (!usage.allowed) {
-    return NextResponse.json(
-      {
-        error: `Daily AI usage limit reached (${usage.limit}/day across syllabus uploads, lecture previews, and lecture summaries). Try again after midnight UTC.`,
-      },
-      { status: 429 }
-    );
+    return NextResponse.json({ error: geminiUsageLimitMessage(usage.limit) }, { status: 429 });
   }
 
   const { summary, usedMock } = await generateTranscriptSummary({

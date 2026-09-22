@@ -12,6 +12,7 @@ const NAV_LINKS = [
   { href: "/board", label: "Board" },
   { href: "/todos", label: "To Do" },
   { href: "/extracurriculars", label: "Extracurriculars" },
+  { href: "/study-guides", label: "Study Guides" },
   { href: "/upload", label: "Upload syllabus" },
 ];
 

@@ -1026,6 +1026,53 @@ form.inline label {
   flex-wrap: wrap;
 }
 
+/* ---------- Study guide lecture picker ---------- */
+
+.lecture-picker-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.lecture-picker-row {
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.lecture-picker-row:last-child {
+  border-bottom: none;
+}
+
+.lecture-picker-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.lecture-picker-content-toggles {
+  display: flex;
+  gap: 1rem;
+  margin: 0.4rem 0 0 1.6rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.lecture-picker-content-toggles label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+}
+
+.lecture-picker-content-toggles label.disabled {
+  color: var(--color-text-faint);
+  cursor: not-allowed;
+}
+
 /* ---------- Cross-page upload status banner ---------- */
 /* Lives in the root layout (see UploadStatusBanner.tsx), not the /upload
    page, so switching pages mid-extraction doesn't lose the ability to see

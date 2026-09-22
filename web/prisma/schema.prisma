@@ -71,25 +71,63 @@ model items {
 }
 
 model lectures {
-  id                 String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  course_id          String         @db.Uuid
-  scheduled_at       DateTime       @db.Timestamptz(6)
-  week_number        Int?
-  topics             String?
-  slides_url         String?
-  preview_status     preview_status @default(not_generated)
-  preview_content    String?
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  course_id           String                @db.Uuid
+  scheduled_at        DateTime              @db.Timestamptz(6)
+  week_number         Int?
+  topics              String?
+  slides_url          String?
+  preview_status      preview_status        @default(not_generated)
+  preview_content     String?
   // Accumulated from the browser's Web Speech API while a lecture is being
   // recorded live (see LecturePage) — null until the first recording session
   // is saved. Free text, not structured, since speech-to-text output has no
   // natural schema beyond "what was said".
-  transcript         String?
-  transcript_summary String?
-  created_at         DateTime       @default(now()) @db.Timestamptz(6)
-  courses            courses        @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  transcript          String?
+  transcript_summary  String?
+  created_at          DateTime              @default(now()) @db.Timestamptz(6)
+  courses             courses               @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  study_guide_sources study_guide_sources[]
 
   @@index([course_id], map: "idx_lectures_course")
   @@index([scheduled_at], map: "idx_lectures_scheduled_at")
+}
+
+// One row per generated study guide. `content` is the final AI output,
+// self-contained once generated — study_guide_sources below is metadata
+// (which lectures/content types went in) for display, not something the
+// content depends on at read time. Owned directly by the user (not via a
+// course relation) since one guide can pull from lectures across several
+// courses.
+model study_guides {
+  id         String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String                @db.Uuid
+  title      String
+  content    String
+  used_mock  Boolean               @default(false)
+  created_at DateTime              @default(now()) @db.Timestamptz(6)
+  user       User                  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  sources    study_guide_sources[]
+
+  @@index([user_id], map: "idx_study_guides_user")
+}
+
+// Which lecture(s) and which content type(s) from each (topics / slides /
+// transcript) a study guide was built from — join-table metadata, not the
+// generated content itself. Cascades if the source lecture is later
+// deleted; the guide's own `content` is unaffected either way.
+model study_guide_sources {
+  id                  String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  study_guide_id      String       @db.Uuid
+  lecture_id          String       @db.Uuid
+  included_topics     Boolean      @default(false)
+  included_slides     Boolean      @default(false)
+  included_transcript Boolean      @default(false)
+  study_guides        study_guides @relation(fields: [study_guide_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  lectures            lectures     @relation(fields: [lecture_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([study_guide_id], map: "idx_study_guide_sources_guide")
+  @@index([lecture_id], map: "idx_study_guide_sources_lecture")
 }
 
 model schema_migrations {
@@ -146,6 +184,7 @@ model User {
   accounts         Account[]
   sessions         Session[]
   gemini_usage     gemini_usage[]
+  study_guides     study_guides[]
 
   @@map("users")
 }

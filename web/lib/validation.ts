@@ -70,3 +70,18 @@ export const extracurricularUpdateSchema = z.object({
   title: z.string().min(1).optional(),
   content: z.string().nullable().optional(),
 });
+
+export const studyGuideCreateSchema = z.object({
+  title: z.string().trim().min(1).max(200).optional(),
+  focus: z.string().trim().max(500).optional(),
+  lectures: z
+    .array(
+      z.object({
+        lecture_id: z.string().uuid(),
+        include_topics: z.boolean().optional().default(true),
+        include_slides: z.boolean().optional().default(true),
+        include_transcript: z.boolean().optional().default(true),
+      })
+    )
+    .min(1, "Select at least one lecture"),
+});

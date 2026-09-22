@@ -8,6 +8,9 @@ import type {
   ItemWithCourse,
   Lecture,
   LectureWithCourse,
+  StudyGuideDetail,
+  StudyGuideLectureSelection,
+  StudyGuideSummary,
   Todo,
 } from "./types";
 
@@ -212,4 +215,21 @@ export const api = {
 
   deleteExtracurricular: (id: string) =>
     request<void>(`/api/extracurriculars/${id}`, { method: "DELETE" }),
+
+  listStudyGuides: () => request<StudyGuideSummary[]>("/api/study-guides"),
+
+  getStudyGuide: (id: string) => request<StudyGuideDetail>(`/api/study-guides/${id}`),
+
+  createStudyGuide: (input: {
+    title?: string;
+    focus?: string;
+    lectures: StudyGuideLectureSelection[];
+  }) =>
+    request<StudyGuideDetail>("/api/study-guides", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+
+  deleteStudyGuide: (id: string) =>
+    request<void>(`/api/study-guides/${id}`, { method: "DELETE" }),
 };
