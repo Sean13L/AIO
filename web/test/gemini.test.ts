@@ -9,6 +9,11 @@ function fakeClient(generateContent: (params: { model: string }) => Promise<unkn
 const overloadedError = () =>
   new Error('{"error":{"code":503,"message":"...high demand...","status":"UNAVAILABLE"}}');
 
+const quotaExhaustedError = () =>
+  new Error(
+    '{"error":{"code":429,"message":"Quota exceeded... limit: 0...","status":"RESOURCE_EXHAUSTED"}}'
+  );
+
 describe("generateContentWithFallback", () => {
   it("returns the primary model's response when it succeeds", async () => {
     const generateContent = vi.fn(async ({ model }: { model: string }) => ({ text: `ok:${model}` }));
@@ -55,9 +60,25 @@ describe("generateContentWithFallback", () => {
       "gemini-3.6-flash",
       "gemini-3.7-flash",
       "gemini-3.5-flash",
+      "gemini-3.8-flash",
+      "gemini-flash-lite-latest",
       "gemini-flash-latest",
-      "gemini-2.5-pro",
     ]);
+  });
+
+  it("falls back on a 429 RESOURCE_EXHAUSTED (per-model quota exhausted), same as a 503", async () => {
+    const generateContent = vi.fn(async ({ model }: { model: string }) => {
+      if (model === "gemini-3.6-flash") throw quotaExhaustedError();
+      return { text: `ok:${model}` };
+    });
+    const client = fakeClient(generateContent);
+
+    const result = await generateContentWithFallback(client, {
+      model: "gemini-3.6-flash",
+      contents: "hi",
+    });
+
+    expect(result).toEqual({ text: "ok:gemini-3.7-flash" });
   });
 
   it("does not fall back on a non-capacity error (fails fast)", async () => {
