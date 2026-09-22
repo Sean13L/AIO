@@ -3,6 +3,8 @@ import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import Link from "next/link";
 import { AuthSessionProvider } from "@/components/AuthSessionProvider";
 import { TopBar } from "@/components/TopBar";
+import { UploadStatusBanner } from "@/components/UploadStatusBanner";
+import { UploadManagerProvider } from "@/lib/uploadManager";
 import { THEME_BOOTSTRAP_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
@@ -41,19 +43,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Skip to content
         </a>
         <AuthSessionProvider>
-          <TopBar />
-          <main id="main-content" className="container">
-            {children}
-          </main>
-          <footer className="site-footer">
-            <div className="site-footer-inner">
-              <span>© {new Date().getFullYear()} Studdy</span>
-              <Link href="/privacy">Privacy</Link>
-              <Link href="/terms">Terms</Link>
-              <Link href="/cookies">Cookies</Link>
-              <a href="mailto:sean.le3131@gmail.com">Contact</a>
-            </div>
-          </footer>
+          <UploadManagerProvider>
+            <TopBar />
+            <UploadStatusBanner />
+            <main id="main-content" className="container">
+              {children}
+            </main>
+            <footer className="site-footer">
+              <div className="site-footer-inner">
+                <span>© {new Date().getFullYear()} Studdy</span>
+                <Link href="/privacy">Privacy</Link>
+                <Link href="/terms">Terms</Link>
+                <Link href="/cookies">Cookies</Link>
+                <a href="mailto:sean.le3131@gmail.com">Contact</a>
+              </div>
+            </footer>
+          </UploadManagerProvider>
         </AuthSessionProvider>
       </body>
     </html>

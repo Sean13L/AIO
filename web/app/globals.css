@@ -1026,6 +1026,85 @@ form.inline label {
   flex-wrap: wrap;
 }
 
+/* ---------- Cross-page upload status banner ---------- */
+/* Lives in the root layout (see UploadStatusBanner.tsx), not the /upload
+   page, so switching pages mid-extraction doesn't lose the ability to see
+   when it finishes — the upload itself was never tied to that page's
+   lifecycle either way, this just gives it somewhere to report to. */
+
+.upload-status-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  max-width: 1080px;
+  margin: 1.25rem auto 0;
+  padding: 0.7rem 1.1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.87rem;
+}
+
+.upload-status-banner-progress {
+  background: var(--color-info-light);
+  color: var(--color-info);
+}
+
+.upload-status-banner-success {
+  background: var(--color-success-light);
+  color: var(--color-success);
+}
+
+.upload-status-banner-error {
+  background: var(--color-danger-light);
+  color: var(--color-danger);
+}
+
+.upload-status-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.upload-status-spinner {
+  display: inline-block;
+  width: 0.85rem;
+  height: 0.85rem;
+  margin-right: 0.5rem;
+  border-radius: 999px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  animation: upload-status-spin 0.8s linear infinite;
+  vertical-align: -0.15em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .upload-status-spinner {
+    animation: none;
+  }
+}
+
+@keyframes upload-status-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.upload-status-dismiss {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0.15rem 0.4rem;
+  border-radius: var(--radius-sm);
+}
+
+.upload-status-dismiss:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
 /* ---------- Lecture transcript ---------- */
 
 .recording-dot {

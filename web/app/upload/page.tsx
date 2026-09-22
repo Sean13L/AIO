@@ -6,13 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useAuthGate } from "@/lib/useAuthGate";
 import { api } from "@/lib/api";
 import type { Course } from "@/lib/types";
-
-interface UploadResult {
-  courseId: string;
-  itemsCreated: number;
-  lecturesCreated: number;
-  usedMock: boolean;
-}
+import { useUploadManager } from "@/lib/uploadManager";
 
 function UploadForm() {
   const { email, ready } = useAuthGate();
@@ -28,13 +22,18 @@ function UploadForm() {
   const [pastedText, setPastedText] = useState("");
   const [courses, setCourses] = useState<Course[] | null>(null);
   const [courseId, setCourseId] = useState(preselectedCourseId);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<UploadResult | null>(null);
+  const [listError, setListError] = useState<string | null>(null);
+  // Submission status/result live in a provider rendered above the whole
+  // app (see lib/uploadManager.tsx) rather than local state, so starting an
+  // upload here and then navigating to another page doesn't lose track of
+  // it — this page's own component unmounts on navigation, but the shared
+  // state it reads from doesn't.
+  const { status, result, error, startUpload, dismiss } = useUploadManager();
+  const submitting = status === "uploading";
 
   useEffect(() => {
     if (!email) return;
-    api.listCourses().then(setCourses).catch((err) => setError((err as Error).message));
+    api.listCourses().then(setCourses).catch((err) => setListError((err as Error).message));
   }, [email]);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -50,28 +49,21 @@ function UploadForm() {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (files.length === 0 && !pastedText.trim()) return;
 
-    setSubmitting(true);
-    setError(null);
-    setResult(null);
-    try {
-      const res = await api.uploadSyllabus({
-        files: files.length > 0 ? files : undefined,
-        text: pastedText.trim() || undefined,
-        courseId: courseId || undefined,
-      });
-      setResult(res);
-      setPastedText("");
-      setFiles([]);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setSubmitting(false);
-    }
+    startUpload({
+      files: files.length > 0 ? files : undefined,
+      text: pastedText.trim() || undefined,
+      courseId: courseId || undefined,
+    });
+    // Clears the draft immediately — the upload itself keeps running
+    // independently (see useUploadManager) and reports back via `result`/
+    // `error` below regardless of whether this form is still mounted.
+    setPastedText("");
+    setFiles([]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   if (!ready) return null;
@@ -107,9 +99,17 @@ function UploadForm() {
           .
         </p>
       )}
-      {error && <p className="error">{error}</p>}
+      {listError && <p className="error">{listError}</p>}
+      {status === "error" && error && <p className="error">{error}</p>}
 
-      {result && (
+      {status === "uploading" && (
+        <p className="muted">
+          <span className="upload-status-spinner" aria-hidden="true" /> Extracting… this keeps
+          running even if you switch pages — come back here or watch for the banner up top.
+        </p>
+      )}
+
+      {status === "done" && result && (
         <div className="card" style={{ borderColor: "var(--color-success)" }}>
           <p className="success" style={{ marginBottom: "0.75rem" }}>
             ✓ Imported {result.itemsCreated} item{result.itemsCreated === 1 ? "" : "s"} and{" "}
@@ -132,9 +132,14 @@ function UploadForm() {
               that&apos;s wrong.
             </p>
           )}
-          <Link href={`/courses/${result.courseId}`}>
-            <button type="button">View course</button>
-          </Link>
+          <div className="actions">
+            <Link href={`/courses/${result.courseId}`}>
+              <button type="button">View course</button>
+            </Link>
+            <button type="button" className="secondary" onClick={dismiss}>
+              Dismiss
+            </button>
+          </div>
         </div>
       )}
 

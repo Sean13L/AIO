@@ -30,6 +30,7 @@ Logo is an inline SVG mark (`web/components/Logo.tsx`, also `web/app/icon.svg` f
   - All key dates: deadlines, assignments, projects, quizzes, exams
 - Output should be structured (JSON) before it's rendered to the UI or written to the database — don't rely on free-text parsing downstream.
 - Handle multiple syllabuses (multiple courses) per user, each becoming its own course record.
+- **Survives switching pages mid-extraction (2026-09-22):** the upload request/result no longer lives in the `/upload` page's own component state, since that unmounts on navigation (a plain `fetch()` isn't tied to a component's lifecycle either way and keeps running server-side, but the old page-local state had nowhere left to report the result once the user had navigated away). `lib/uploadManager.tsx`'s `UploadManagerProvider` — rendered once in the root layout, which doesn't unmount across route changes — now owns that lifecycle; `components/UploadStatusBanner.tsx` surfaces it on every page except `/upload` itself (which shows its own richer inline result card, reading from the same shared state, so nothing's duplicated).
 
 ### 2. Calendar
 - Internal calendar view showing all extracted dates across all courses.
