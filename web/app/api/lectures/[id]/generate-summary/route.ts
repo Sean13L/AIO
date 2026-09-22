@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/session";
 import { generateTranscriptSummary } from "@/lib/transcription/generateTranscriptSummary";
+import { recordGeminiCallAndCheckLimit } from "@/lib/geminiUsage";
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const userId = await getCurrentUserId();
@@ -17,6 +18,16 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json(
       { error: "This lecture has no transcript yet — record one first" },
       { status: 400 }
+    );
+  }
+
+  const usage = await recordGeminiCallAndCheckLimit(userId);
+  if (!usage.allowed) {
+    return NextResponse.json(
+      {
+        error: `Daily AI usage limit reached (${usage.limit}/day across syllabus uploads, lecture previews, and lecture summaries). Try again after midnight UTC.`,
+      },
+      { status: 429 }
     );
   }
 

@@ -4,6 +4,7 @@ import { getCurrentUserId } from "@/lib/session";
 import { downloadFile, filenameFromFileUrl } from "@/lib/storage";
 import { extractRawText } from "@/lib/extraction/parseFile";
 import { generatePreview } from "@/lib/preview/generatePreview";
+import { recordGeminiCallAndCheckLimit } from "@/lib/geminiUsage";
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const userId = await getCurrentUserId();
@@ -15,6 +16,16 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     include: { courses: { select: { course_code: true } } },
   });
   if (!lecture) return NextResponse.json({ error: "Lecture not found" }, { status: 404 });
+
+  const usage = await recordGeminiCallAndCheckLimit(userId);
+  if (!usage.allowed) {
+    return NextResponse.json(
+      {
+        error: `Daily AI usage limit reached (${usage.limit}/day across syllabus uploads, lecture previews, and lecture summaries). Try again after midnight UTC.`,
+      },
+      { status: 429 }
+    );
+  }
 
   const filename = filenameFromFileUrl(lecture.slides_url);
   const slidesBuffer = filename ? await downloadFile("lectures", filename) : null;

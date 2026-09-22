@@ -195,6 +195,65 @@ describe.skipIf(!hasDb)("Lectures API routes (requires DATABASE_URL)", () => {
     await prisma.courses.delete({ where: { id: course.id } });
   });
 
+  it("429s once the daily Gemini cap is hit, and resumes fresh for a different user", async () => {
+    vi.stubEnv("GEMINI_DAILY_LIMIT", "1");
+    const cappedUser = await prisma.user.create({
+      data: { email: `lecture-test-capped-${Date.now()}@example.com` },
+    });
+    const course = await prisma.courses.create({
+      data: { user_id: cappedUser.id, course_code: "CAP101", course_name: "Capped Course" },
+    });
+    const lecture1 = await prisma.lectures.create({
+      data: { course_id: course.id, scheduled_at: new Date("2026-09-08T14:00:00Z"), week_number: 1 },
+    });
+    const lecture2 = await prisma.lectures.create({
+      data: { course_id: course.id, scheduled_at: new Date("2026-09-10T14:00:00Z"), week_number: 1 },
+    });
+
+    const originalUserId = mockSession.userId;
+    mockSession.userId = cappedUser.id;
+
+    const { POST: generate } = await import("@/app/api/lectures/[id]/generate-preview/route");
+
+    const first = await generate(new NextRequest("http://localhost/api/lectures/x", { method: "POST" }), {
+      params: Promise.resolve({ id: lecture1.id }),
+    });
+    expect(first.status).toBe(200);
+
+    // A different lecture, same user — the cap is a shared daily budget
+    // across all Gemini-backed endpoints/lectures, not per-lecture.
+    const second = await generate(new NextRequest("http://localhost/api/lectures/x", { method: "POST" }), {
+      params: Promise.resolve({ id: lecture2.id }),
+    });
+    expect(second.status).toBe(429);
+    expect((await second.json()).error).toMatch(/Daily AI usage limit reached/);
+
+    // A different user isn't affected by the first user's cap — a fresh
+    // user, not the suite's shared mockSession.userId, since that one may
+    // already have accumulated usage today from earlier tests in this file.
+    const uncappedUser = await prisma.user.create({
+      data: { email: `lecture-test-uncapped-${Date.now()}@example.com` },
+    });
+    mockSession.userId = uncappedUser.id;
+    const unaffectedCourse = await prisma.courses.create({
+      data: { user_id: uncappedUser.id, course_code: "CAP102", course_name: "Unaffected Course" },
+    });
+    const unaffectedLecture = await prisma.lectures.create({
+      data: { course_id: unaffectedCourse.id, scheduled_at: new Date("2026-09-08T14:00:00Z") },
+    });
+    const third = await generate(new NextRequest("http://localhost/api/lectures/x", { method: "POST" }), {
+      params: Promise.resolve({ id: unaffectedLecture.id }),
+    });
+    expect(third.status).toBe(200);
+
+    mockSession.userId = originalUserId;
+    await prisma.courses.delete({ where: { id: unaffectedCourse.id } });
+    await prisma.courses.delete({ where: { id: course.id } });
+    await prisma.gemini_usage.deleteMany({ where: { user_id: { in: [cappedUser.id, uncappedUser.id] } } });
+    await prisma.user.delete({ where: { id: cappedUser.id } });
+    await prisma.user.delete({ where: { id: uncappedUser.id } });
+  });
+
   it("lists all lectures across courses with course_code attached, and 404s for another user", async () => {
     const course1 = await prisma.courses.create({
       data: { user_id: mockSession.userId, course_code: "LIST-A", course_name: "Course A", semester: "1A" },

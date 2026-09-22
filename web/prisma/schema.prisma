@@ -145,8 +145,24 @@ model User {
   todos            todos[]
   accounts         Account[]
   sessions         Session[]
+  gemini_usage     gemini_usage[]
 
   @@map("users")
+}
+
+// One row per (user, UTC calendar day) — tracks how many Gemini-backed calls
+// (syllabus extraction, lecture-preview generation, transcript summary) a
+// user has made today, enforced as a shared daily cap across all three (see
+// lib/geminiUsage.ts) rather than a separate limit per feature, since what's
+// being protected is total Gemini spend/call volume for the account.
+model gemini_usage {
+  id      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id String   @db.Uuid
+  date    DateTime @db.Date
+  count   Int      @default(0)
+  user    User     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, date])
 }
 
 model Account {
