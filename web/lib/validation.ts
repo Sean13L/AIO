@@ -85,3 +85,12 @@ export const studyGuideCreateSchema = z.object({
     )
     .min(1, "Select at least one lecture"),
 });
+
+// Regenerating reuses the study guide's existing lecture/content-type
+// selections (see study_guide_sources) — only title/focus are optionally
+// overridable, and only actually changed if provided (undefined leaves the
+// stored value as-is; empty string clears it).
+export const studyGuideRegenerateSchema = z.object({
+  title: z.string().trim().min(1).max(200).optional(),
+  focus: z.string().trim().max(500).optional(),
+});

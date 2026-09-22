@@ -2,12 +2,14 @@ import type {
   CalendarSyncTarget,
   Course,
   Extracurricular,
+  Flashcard,
   Item,
   ItemStatus,
   ItemType,
   ItemWithCourse,
   Lecture,
   LectureWithCourse,
+  QuizQuestion,
   StudyGuideDetail,
   StudyGuideLectureSelection,
   StudyGuideSummary,
@@ -232,4 +234,20 @@ export const api = {
 
   deleteStudyGuide: (id: string) =>
     request<void>(`/api/study-guides/${id}`, { method: "DELETE" }),
+
+  regenerateStudyGuide: (id: string, update?: { title?: string; focus?: string }) =>
+    request<StudyGuideDetail>(`/api/study-guides/${id}/regenerate`, {
+      method: "POST",
+      body: JSON.stringify(update ?? {}),
+    }),
+
+  generateFlashcards: (id: string) =>
+    request<{ cards: Flashcard[]; used_mock: boolean }>(`/api/study-guides/${id}/flashcards`, {
+      method: "POST",
+    }),
+
+  generateQuiz: (id: string) =>
+    request<{ questions: QuizQuestion[]; used_mock: boolean }>(`/api/study-guides/${id}/quiz`, {
+      method: "POST",
+    }),
 };

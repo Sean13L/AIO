@@ -116,11 +116,28 @@ export interface StudyGuideSource {
   included_transcript: boolean;
 }
 
+export interface Flashcard {
+  front: string;
+  back: string;
+}
+
+export interface QuizQuestion {
+  question: string;
+  options: string[];
+  correct_index: number;
+  explanation: string;
+}
+
 export interface StudyGuideDetail {
   id: string;
   title: string;
+  focus: string | null;
   content: string;
   used_mock: boolean;
+  flashcards: Flashcard[] | null;
+  flashcards_used_mock: boolean;
+  quiz: QuizQuestion[] | null;
+  quiz_used_mock: boolean;
   created_at: string;
   sources: StudyGuideSource[];
 }

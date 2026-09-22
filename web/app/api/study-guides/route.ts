@@ -68,6 +68,7 @@ export async function POST(req: NextRequest) {
     data: {
       user_id: userId,
       title: title?.trim() || defaultTitle,
+      focus: focus?.trim() || null,
       content,
       used_mock: usedMock,
       sources: {

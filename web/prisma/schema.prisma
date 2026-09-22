@@ -100,14 +100,27 @@ model lectures {
 // course relation) since one guide can pull from lectures across several
 // courses.
 model study_guides {
-  id         String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id    String                @db.Uuid
-  title      String
-  content    String
-  used_mock  Boolean               @default(false)
-  created_at DateTime              @default(now()) @db.Timestamptz(6)
-  user       User                  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  sources    study_guide_sources[]
+  id                   String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id              String                @db.Uuid
+  title                String
+  // Free-text emphasis the user gave at generation time (e.g. "focus on
+  // definitions") — persisted so Regenerate can reuse or let them tweak it,
+  // instead of asking them to retype it every time.
+  focus                String?
+  content              String
+  used_mock            Boolean               @default(false)
+  // Alternate study formats generated FROM this guide's content (not from
+  // the original lectures directly) — null until first generated. Kept as
+  // JSON on the guide itself, same "generate in place, overwrite on
+  // regenerate" pattern as lectures.preview_content, rather than separate
+  // tables, since each guide has at most one flashcard set and one quiz.
+  flashcards           Json?
+  flashcards_used_mock Boolean               @default(false)
+  quiz                 Json?
+  quiz_used_mock       Boolean               @default(false)
+  created_at           DateTime              @default(now()) @db.Timestamptz(6)
+  user                 User                  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  sources              study_guide_sources[]
 
   @@index([user_id], map: "idx_study_guides_user")
 }

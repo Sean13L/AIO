@@ -1073,6 +1073,104 @@ form.inline label {
   cursor: not-allowed;
 }
 
+/* ---------- Flashcards ---------- */
+
+.flashcard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 180px;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: border-color var(--ease), box-shadow var(--ease);
+}
+
+.flashcard:hover {
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+.flashcard:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.flashcard-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+
+.flashcard-text {
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 46ch;
+}
+
+.flashcard-hint {
+  font-size: 0.78rem;
+}
+
+/* ---------- Quiz ---------- */
+
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0.85rem 0;
+}
+
+.quiz-option {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.9rem;
+  text-align: left;
+  font-weight: 500;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+.quiz-option:hover:not(:disabled) {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+}
+
+.quiz-option:disabled {
+  cursor: default;
+}
+
+.quiz-option-correct {
+  background: var(--color-success-light);
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.quiz-option-incorrect {
+  background: var(--color-danger-light);
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.quiz-explanation {
+  background: var(--color-bg-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.85rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
 /* ---------- Cross-page upload status banner ---------- */
 /* Lives in the root layout (see UploadStatusBanner.tsx), not the /upload
    page, so switching pages mid-extraction doesn't lose the ability to see

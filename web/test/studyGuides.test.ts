@@ -240,4 +240,138 @@ describe.skipIf(!hasDb)("Study guides API routes (requires DATABASE_URL)", () =>
     await prisma.study_guides.deleteMany({ where: { id: created.id } });
     await prisma.user.delete({ where: { id: otherUser.id } });
   }, 20000);
+
+  it("regenerates from the same stored sources, and 404s for another user", async () => {
+    const { POST: createGuide } = await import("@/app/api/study-guides/route");
+    const createRes = await createGuide(
+      new NextRequest("http://localhost/api/study-guides", {
+        method: "POST",
+        body: JSON.stringify({
+          focus: "big picture only",
+          lectures: [
+            {
+              lecture_id: lectureWithTopicsAndSlides,
+              include_topics: true,
+              include_slides: true,
+              include_transcript: false,
+            },
+          ],
+        }),
+      })
+    );
+    const created = await createRes.json();
+    expect(created.focus).toBe("big picture only");
+
+    const { POST: regenerate } = await import("@/app/api/study-guides/[id]/regenerate/route");
+
+    // No body change -> keeps the stored focus.
+    const sameRes = await regenerate(
+      new NextRequest("http://localhost/api/study-guides/x/regenerate", {
+        method: "POST",
+        body: JSON.stringify({}),
+      }),
+      { params: Promise.resolve({ id: created.id }) }
+    );
+    expect(sameRes.status).toBe(200);
+    const same = await sameRes.json();
+    expect(same.focus).toBe("big picture only");
+    expect(same.sources).toHaveLength(1);
+
+    // Explicit focus overrides the stored one; title stays put.
+    const changedRes = await regenerate(
+      new NextRequest("http://localhost/api/study-guides/x/regenerate", {
+        method: "POST",
+        body: JSON.stringify({ focus: "definitions only" }),
+      }),
+      { params: Promise.resolve({ id: created.id }) }
+    );
+    const changed = await changedRes.json();
+    expect(changed.focus).toBe("definitions only");
+    expect(changed.title).toBe(created.title);
+
+    const otherUser = await prisma.user.create({
+      data: { email: `study-guide-test-regen-other-${Date.now()}@example.com` },
+    });
+    const originalUserId = mockSession.userId;
+    mockSession.userId = otherUser.id;
+    const theirRegen = await regenerate(
+      new NextRequest("http://localhost/api/study-guides/x/regenerate", {
+        method: "POST",
+        body: JSON.stringify({}),
+      }),
+      { params: Promise.resolve({ id: created.id }) }
+    );
+    expect(theirRegen.status).toBe(404);
+
+    mockSession.userId = originalUserId;
+    await prisma.study_guides.deleteMany({ where: { id: created.id } });
+    await prisma.user.delete({ where: { id: otherUser.id } });
+  }, 20000);
+
+  it("generates flashcards and a quiz from a guide's content, scoped to the owner", async () => {
+    const { POST: createGuide } = await import("@/app/api/study-guides/route");
+    const createRes = await createGuide(
+      new NextRequest("http://localhost/api/study-guides", {
+        method: "POST",
+        body: JSON.stringify({
+          lectures: [
+            {
+              lecture_id: lectureWithTranscriptOnly,
+              include_topics: false,
+              include_slides: false,
+              include_transcript: true,
+            },
+          ],
+        }),
+      })
+    );
+    const created = await createRes.json();
+    expect(created.flashcards).toBeNull();
+    expect(created.quiz).toBeNull();
+
+    const { POST: genCards } = await import("@/app/api/study-guides/[id]/flashcards/route");
+    const cardsRes = await genCards(
+      new NextRequest("http://localhost/api/study-guides/x/flashcards", { method: "POST" }),
+      { params: Promise.resolve({ id: created.id }) }
+    );
+    expect(cardsRes.status).toBe(200);
+    const cardsBody = await cardsRes.json();
+    expect(cardsBody.used_mock).toBe(true);
+    expect(cardsBody.cards.length).toBeGreaterThan(0);
+    expect(cardsBody.cards[0]).toHaveProperty("front");
+    expect(cardsBody.cards[0]).toHaveProperty("back");
+
+    const { POST: genQuiz } = await import("@/app/api/study-guides/[id]/quiz/route");
+    const quizRes = await genQuiz(
+      new NextRequest("http://localhost/api/study-guides/x/quiz", { method: "POST" }),
+      { params: Promise.resolve({ id: created.id }) }
+    );
+    expect(quizRes.status).toBe(200);
+    const quizBody = await quizRes.json();
+    expect(quizBody.used_mock).toBe(true);
+    expect(quizBody.questions[0].options).toHaveLength(4);
+
+    const { GET: getGuide } = await import("@/app/api/study-guides/[id]/route");
+    const fetchedRes = await getGuide(new NextRequest("http://localhost/api/study-guides/x"), {
+      params: Promise.resolve({ id: created.id }),
+    });
+    const fetched = await fetchedRes.json();
+    expect(fetched.flashcards.length).toBeGreaterThan(0);
+    expect(fetched.quiz.length).toBeGreaterThan(0);
+
+    const otherUser = await prisma.user.create({
+      data: { email: `study-guide-test-cards-other-${Date.now()}@example.com` },
+    });
+    const originalUserId = mockSession.userId;
+    mockSession.userId = otherUser.id;
+    const theirCards = await genCards(
+      new NextRequest("http://localhost/api/study-guides/x/flashcards", { method: "POST" }),
+      { params: Promise.resolve({ id: created.id }) }
+    );
+    expect(theirCards.status).toBe(404);
+
+    mockSession.userId = originalUserId;
+    await prisma.study_guides.deleteMany({ where: { id: created.id } });
+    await prisma.user.delete({ where: { id: otherUser.id } });
+  }, 20000);
 });
