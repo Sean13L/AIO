@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { QuizQuestion } from "@/lib/types";
+import { stripInlineMarkdown } from "@/lib/studyGuide/plainText";
 
 export function QuizViewer({ questions }: { questions: QuizQuestion[] }) {
   const [index, setIndex] = useState(0);
@@ -53,7 +54,7 @@ export function QuizViewer({ questions }: { questions: QuizQuestion[] }) {
       <p className="muted" style={{ marginBottom: "0.5rem" }}>
         Question {index + 1} of {questions.length}
       </p>
-      <p style={{ fontWeight: 600 }}>{question.question}</p>
+      <p style={{ fontWeight: 600 }}>{stripInlineMarkdown(question.question)}</p>
       <div className="quiz-options">
         {question.options.map((option, i) => {
           const isCorrect = i === question.correct_index;
@@ -74,7 +75,7 @@ export function QuizViewer({ questions }: { questions: QuizQuestion[] }) {
               onClick={() => choose(i)}
               disabled={selected !== null}
             >
-              {option}
+              {stripInlineMarkdown(option)}
             </button>
           );
         })}
@@ -83,7 +84,7 @@ export function QuizViewer({ questions }: { questions: QuizQuestion[] }) {
         <>
           <div className="quiz-explanation">
             <strong>{selected === question.correct_index ? "Correct." : "Not quite."}</strong>{" "}
-            {question.explanation}
+            {stripInlineMarkdown(question.explanation)}
           </div>
           <button type="button" onClick={next} style={{ marginTop: "0.75rem" }}>
             {index + 1 >= questions.length ? "See results" : "Next question"}

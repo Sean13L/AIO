@@ -1147,17 +1147,29 @@ form.inline label {
   border-color: var(--color-primary);
 }
 
+/* Options disable once answered — but the global `button:disabled` fade and
+   `button:hover` fill (both element+pseudo selectors) would otherwise win
+   over the plain class selectors below, washing out the correct/incorrect
+   colors and turning the hovered pick blue with unreadable red text. */
 .quiz-option:disabled {
   cursor: default;
+  opacity: 1;
 }
 
-.quiz-option-correct {
+.quiz-option:disabled:hover {
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+}
+
+.quiz-option.quiz-option-correct,
+.quiz-option.quiz-option-correct:hover {
   background: var(--color-success-light);
   border-color: var(--color-success);
   color: var(--color-success);
 }
 
-.quiz-option-incorrect {
+.quiz-option.quiz-option-incorrect,
+.quiz-option.quiz-option-incorrect:hover {
   background: var(--color-danger-light);
   border-color: var(--color-danger);
   color: var(--color-danger);

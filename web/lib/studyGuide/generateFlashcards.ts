@@ -32,7 +32,9 @@ Rules:
 - Cover the material broadly rather than clustering on one section, but skip trivial restatements
   (e.g. don't make separate cards for near-duplicate facts).
 - Aim for roughly 10-20 cards depending on how much material is actually here — fewer for a short
-  guide, more for a long one. Don't pad with filler cards to hit a number.`;
+  guide, more for a long one. Don't pad with filler cards to hit a number.
+- Write plain text only — no markdown (no **bold**, *italics*, or backticks). Cards are displayed
+  as-is, so formatting characters would show up literally.`;
 
 export interface GenerateFlashcardsResult {
   cards: Flashcard[];

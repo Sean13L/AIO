@@ -50,7 +50,9 @@ Rules:
 - Write a short explanation for each question, shown after the student answers, that reinforces
   why the correct option is right (and briefly why the others aren't, when that's instructive).
 - Aim for roughly 5-10 questions depending on how much material is actually here. Don't pad with
-  filler questions to hit a number.`;
+  filler questions to hit a number.
+- Write plain text only — no markdown (no **bold**, *italics*, or backticks) in questions, options,
+  or explanations. They're displayed as-is, so formatting characters would show up literally.`;
 
 export interface GenerateQuizResult {
   questions: QuizQuestion[];

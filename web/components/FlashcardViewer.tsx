@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Flashcard } from "@/lib/types";
+import { stripInlineMarkdown } from "@/lib/studyGuide/plainText";
 
 export function FlashcardViewer({ cards }: { cards: Flashcard[] }) {
   const [index, setIndex] = useState(0);
@@ -37,7 +38,7 @@ export function FlashcardViewer({ cards }: { cards: Flashcard[] }) {
         }}
       >
         <span className="flashcard-label">{revealed ? "Answer" : "Question"}</span>
-        <p className="flashcard-text">{revealed ? card.back : card.front}</p>
+        <p className="flashcard-text">{stripInlineMarkdown(revealed ? card.back : card.front)}</p>
         <span className="muted flashcard-hint">
           Click to {revealed ? "show the question" : "reveal the answer"}
         </span>
