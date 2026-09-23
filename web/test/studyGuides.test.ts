@@ -20,6 +20,28 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
+// POST /api/study-guides takes multipart (to carry uploaded note files),
+// not JSON — this builds the equivalent FormData request from the same
+// plain-object shape the old JSON body used, so most test bodies below
+// don't need reshaping.
+function studyGuideFormRequest(fields: {
+  title?: string;
+  focus?: string;
+  lectures?: unknown[];
+  notes_text?: string;
+  notes_files?: { name: string; content: string }[];
+}): NextRequest {
+  const formData = new FormData();
+  formData.append("lectures", JSON.stringify(fields.lectures ?? []));
+  if (fields.title) formData.append("title", fields.title);
+  if (fields.focus) formData.append("focus", fields.focus);
+  if (fields.notes_text) formData.append("notes_text", fields.notes_text);
+  for (const file of fields.notes_files ?? []) {
+    formData.append("notes_file", new File([file.content], file.name, { type: "text/plain" }));
+  }
+  return new NextRequest("http://localhost/api/study-guides", { method: "POST", body: formData });
+}
+
 const mockFiles = vi.hoisted(() => new Map<string, Buffer>());
 vi.mock("@/lib/storage", () => ({
   uploadFile: vi.fn(async (namespace: string, buffer: Buffer, filename: string) => {
@@ -88,36 +110,87 @@ describe.skipIf(!hasDb)("Study guides API routes (requires DATABASE_URL)", () =>
     await prisma.$disconnect();
   });
 
-  it("400s with no lectures selected (schema validation)", async () => {
+  it("400s with no lectures selected and no notes", async () => {
     const { POST } = await import("@/app/api/study-guides/route");
-    const res = await POST(
-      new NextRequest("http://localhost/api/study-guides", {
-        method: "POST",
-        body: JSON.stringify({ lectures: [] }),
-      })
-    );
+    const res = await POST(studyGuideFormRequest({ lectures: [] }));
     expect(res.status).toBe(400);
+    expect((await res.json()).error).toMatch(/nothing to build from/i);
   });
 
-  it("400s when every selected lecture has no usable content", async () => {
+  it("400s when every selected lecture has no usable content and there are no notes", async () => {
     const { POST } = await import("@/app/api/study-guides/route");
     const res = await POST(
-      new NextRequest("http://localhost/api/study-guides", {
-        method: "POST",
-        body: JSON.stringify({
-          lectures: [
-            {
-              lecture_id: lectureWithNothing,
-              include_topics: true,
-              include_slides: true,
-              include_transcript: true,
-            },
-          ],
-        }),
+      studyGuideFormRequest({
+        lectures: [
+          {
+            lecture_id: lectureWithNothing,
+            include_topics: true,
+            include_slides: true,
+            include_transcript: true,
+          },
+        ],
       })
     );
     expect(res.status).toBe(400);
-    expect((await res.json()).error).toMatch(/any content to include/i);
+    expect((await res.json()).error).toMatch(/nothing to build from/i);
+  });
+
+  it("generates a guide from notes alone, with zero lectures selected", async () => {
+    const { POST } = await import("@/app/api/study-guides/route");
+    const res = await POST(
+      studyGuideFormRequest({
+        lectures: [],
+        notes_text: "Remember: the professor said office hours moved to Thursdays.",
+      })
+    );
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.sources).toHaveLength(0);
+    expect(body.notes).toContain("office hours moved to Thursdays");
+    expect(body.content).toContain("Student's own notes");
+    expect(body.title).toBe("Study guide — from notes");
+
+    await prisma.study_guides.deleteMany({ where: { id: body.id } });
+  });
+
+  it("combines a pasted note and an uploaded note file with lecture material", async () => {
+    const { POST } = await import("@/app/api/study-guides/route");
+    const res = await POST(
+      studyGuideFormRequest({
+        lectures: [
+          {
+            lecture_id: lectureWithTopicsAndSlides,
+            include_topics: true,
+            include_slides: false,
+            include_transcript: false,
+          },
+        ],
+        notes_text: "Pasted reminder about the midterm format.",
+        notes_files: [{ name: "extra-notes.txt", content: "Uploaded file note about recursion." }],
+      })
+    );
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.notes).toContain("Pasted reminder about the midterm format.");
+    expect(body.notes).toContain("Uploaded file note about recursion.");
+    expect(body.sources).toHaveLength(1);
+
+    await prisma.study_guides.deleteMany({ where: { id: body.id } });
+  });
+
+  it("400s on a disallowed note file type", async () => {
+    const { POST } = await import("@/app/api/study-guides/route");
+    const formData = new FormData();
+    formData.append("lectures", "[]");
+    formData.append(
+      "notes_file",
+      new File(["<script>bad</script>"], "notes.html", { type: "text/html" })
+    );
+    const res = await POST(
+      new NextRequest("http://localhost/api/study-guides", { method: "POST", body: formData })
+    );
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toMatch(/unsupported file type/i);
   });
 
   it("generates a guide from selected lectures/content, persists sources, and supports get/list/delete", async () => {
@@ -126,36 +199,33 @@ describe.skipIf(!hasDb)("Study guides API routes (requires DATABASE_URL)", () =>
     // be tight under normal latency, let alone Neon under load.
     const { POST } = await import("@/app/api/study-guides/route");
     const createRes = await POST(
-      new NextRequest("http://localhost/api/study-guides", {
-        method: "POST",
-        body: JSON.stringify({
-          title: "Midterm 1 review",
-          focus: "definitions",
-          lectures: [
-            {
-              lecture_id: lectureWithTopicsAndSlides,
-              include_topics: true,
-              include_slides: true,
-              // Requesting transcript on a lecture that has none should just
-              // be a no-op for that content type, not an error.
-              include_transcript: true,
-            },
-            {
-              lecture_id: lectureWithTranscriptOnly,
-              include_topics: false,
-              include_slides: false,
-              include_transcript: true,
-            },
-            // Not owned by this user — should be silently dropped, not leak
-            // as a 404/500.
-            {
-              lecture_id: "00000000-0000-0000-0000-000000000000",
-              include_topics: true,
-              include_slides: true,
-              include_transcript: true,
-            },
-          ],
-        }),
+      studyGuideFormRequest({
+        title: "Midterm 1 review",
+        focus: "definitions",
+        lectures: [
+          {
+            lecture_id: lectureWithTopicsAndSlides,
+            include_topics: true,
+            include_slides: true,
+            // Requesting transcript on a lecture that has none should just
+            // be a no-op for that content type, not an error.
+            include_transcript: true,
+          },
+          {
+            lecture_id: lectureWithTranscriptOnly,
+            include_topics: false,
+            include_slides: false,
+            include_transcript: true,
+          },
+          // Not owned by this user — should be silently dropped, not leak
+          // as a 404/500.
+          {
+            lecture_id: "00000000-0000-0000-0000-000000000000",
+            include_topics: true,
+            include_slides: true,
+            include_transcript: true,
+          },
+        ],
       })
     );
     expect(createRes.status).toBe(201);
@@ -204,18 +274,15 @@ describe.skipIf(!hasDb)("Study guides API routes (requires DATABASE_URL)", () =>
   it("scopes get/delete to the owning user", async () => {
     const { POST } = await import("@/app/api/study-guides/route");
     const createRes = await POST(
-      new NextRequest("http://localhost/api/study-guides", {
-        method: "POST",
-        body: JSON.stringify({
-          lectures: [
-            {
-              lecture_id: lectureWithTopicsAndSlides,
-              include_topics: true,
-              include_slides: false,
-              include_transcript: false,
-            },
-          ],
-        }),
+      studyGuideFormRequest({
+        lectures: [
+          {
+            lecture_id: lectureWithTopicsAndSlides,
+            include_topics: true,
+            include_slides: false,
+            include_transcript: false,
+          },
+        ],
       })
     );
     const created = await createRes.json();
@@ -244,19 +311,16 @@ describe.skipIf(!hasDb)("Study guides API routes (requires DATABASE_URL)", () =>
   it("regenerates from the same stored sources, and 404s for another user", async () => {
     const { POST: createGuide } = await import("@/app/api/study-guides/route");
     const createRes = await createGuide(
-      new NextRequest("http://localhost/api/study-guides", {
-        method: "POST",
-        body: JSON.stringify({
-          focus: "big picture only",
-          lectures: [
-            {
-              lecture_id: lectureWithTopicsAndSlides,
-              include_topics: true,
-              include_slides: true,
-              include_transcript: false,
-            },
-          ],
-        }),
+      studyGuideFormRequest({
+        focus: "big picture only",
+        lectures: [
+          {
+            lecture_id: lectureWithTopicsAndSlides,
+            include_topics: true,
+            include_slides: true,
+            include_transcript: false,
+          },
+        ],
       })
     );
     const created = await createRes.json();
@@ -311,18 +375,15 @@ describe.skipIf(!hasDb)("Study guides API routes (requires DATABASE_URL)", () =>
   it("generates flashcards and a quiz from a guide's content, scoped to the owner", async () => {
     const { POST: createGuide } = await import("@/app/api/study-guides/route");
     const createRes = await createGuide(
-      new NextRequest("http://localhost/api/study-guides", {
-        method: "POST",
-        body: JSON.stringify({
-          lectures: [
-            {
-              lecture_id: lectureWithTranscriptOnly,
-              include_topics: false,
-              include_slides: false,
-              include_transcript: true,
-            },
-          ],
-        }),
+      studyGuideFormRequest({
+        lectures: [
+          {
+            lecture_id: lectureWithTranscriptOnly,
+            include_topics: false,
+            include_slides: false,
+            include_transcript: true,
+          },
+        ],
       })
     );
     const created = await createRes.json();

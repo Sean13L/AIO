@@ -222,15 +222,32 @@ export const api = {
 
   getStudyGuide: (id: string) => request<StudyGuideDetail>(`/api/study-guides/${id}`),
 
-  createStudyGuide: (input: {
+  // Bypasses the shared request() helper: carrying uploaded note files
+  // means this has to be multipart, not JSON — same reasoning as
+  // uploadSyllabus/uploadLectureSlides.
+  createStudyGuide: async (input: {
     title?: string;
     focus?: string;
     lectures: StudyGuideLectureSelection[];
-  }) =>
-    request<StudyGuideDetail>("/api/study-guides", {
-      method: "POST",
-      body: JSON.stringify(input),
-    }),
+    notesText?: string;
+    notesFiles?: File[];
+  }): Promise<StudyGuideDetail> => {
+    const formData = new FormData();
+    formData.append("lectures", JSON.stringify(input.lectures));
+    if (input.title) formData.append("title", input.title);
+    if (input.focus) formData.append("focus", input.focus);
+    if (input.notesText) formData.append("notes_text", input.notesText);
+    for (const file of input.notesFiles ?? []) formData.append("notes_file", file);
+
+    const res = await fetch("/api/study-guides", { method: "POST", body: formData });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(
+        typeof body.error === "string" ? body.error : "Failed to create study guide"
+      );
+    }
+    return res.json();
+  },
 
   deleteStudyGuide: (id: string) =>
     request<void>(`/api/study-guides/${id}`, { method: "DELETE" }),

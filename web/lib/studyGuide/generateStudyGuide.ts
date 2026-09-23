@@ -5,9 +5,9 @@ import type { StudyGuideMaterialSection } from "./buildStudyGuideMaterial";
 
 const SYSTEM_PROMPT = `You create a study guide for a student from lecture material they've selected —
 syllabus topics, uploaded slide content, and/or lecture transcripts/summaries — across one or more
-of their courses. Transcripts and summaries, where present, ultimately come from live speech-to-text
-during class, so expect filler words and the occasional misheard term; read through those rather
-than commenting on them.
+of their courses, optionally alongside the student's own supplementary notes. Transcripts and
+summaries, where present, ultimately come from live speech-to-text during class, so expect filler
+words and the occasional misheard term; read through those rather than commenting on them.
 
 Organize the guide by the lecture sections given (keep their headers), and for each:
 - Distill the core concepts, definitions, and facts a student needs to know, in a form suited to
@@ -16,6 +16,12 @@ Organize the guide by the lecture sections given (keep their headers), and for e
   (e.g. "this will be on the test", assignment hints, formulas to memorize).
 - If the same concept recurs across sections, don't repeat the full explanation — note briefly
   where else it's covered and expand it only once.
+
+If the student's own notes are included, treat them as trustworthy supplementary material — weave
+in anything from them that adds context, examples, or emphasis the lecture material alone doesn't
+cover, under whichever existing section it's most relevant to (or its own short section if it
+doesn't fit any lecture). The lecture/syllabus material should still anchor the guide; notes add to
+it, they don't override what the instructor's own material says.
 
 If the student gave a focus, prioritize material relevant to it, but don't omit other clearly
 important content from the sections provided.
@@ -26,6 +32,7 @@ everything covered, deduplicated.`;
 export interface GenerateStudyGuideInput {
   sections: StudyGuideMaterialSection[];
   focus?: string | null;
+  notes?: string | null;
   apiKey?: string;
   model?: string;
 }
@@ -38,6 +45,7 @@ export interface GenerateStudyGuideResult {
 export async function generateStudyGuide({
   sections,
   focus = null,
+  notes = null,
   apiKey = process.env.GEMINI_API_KEY,
   model = process.env.GEMINI_MODEL ?? "gemini-3.6-flash",
 }: GenerateStudyGuideInput): Promise<GenerateStudyGuideResult> {
@@ -46,7 +54,7 @@ export async function generateStudyGuide({
       "[generateStudyGuide] GEMINI_API_KEY is not set — falling back to the " +
         "local mock generator (mockGenerateStudyGuide.ts)."
     );
-    return { content: mockGenerateStudyGuide({ sections, focus }), usedMock: true };
+    return { content: mockGenerateStudyGuide({ sections, focus, notes }), usedMock: true };
   }
 
   const client = new GoogleGenAI({ apiKey });
@@ -54,6 +62,7 @@ export async function generateStudyGuide({
   const userContent = [
     focus ? `Focus requested by the student: ${focus}` : null,
     ...sections.map((s) => `=== ${s.label} ===\n\n${s.text}`),
+    notes ? `=== Student's own notes ===\n\n${notes}` : null,
   ]
     .filter((part): part is string => Boolean(part))
     .join("\n\n");

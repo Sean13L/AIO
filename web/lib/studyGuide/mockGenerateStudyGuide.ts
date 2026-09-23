@@ -10,9 +10,14 @@ const SECTION_SNIPPET_LENGTH = 400;
 export interface MockGenerateStudyGuideInput {
   sections: StudyGuideMaterialSection[];
   focus: string | null;
+  notes?: string | null;
 }
 
-export function mockGenerateStudyGuide({ sections, focus }: MockGenerateStudyGuideInput): string {
+export function mockGenerateStudyGuide({
+  sections,
+  focus,
+  notes,
+}: MockGenerateStudyGuideInput): string {
   const lines = ["Study guide (locally generated — no GEMINI_API_KEY set)."];
 
   if (focus) {
@@ -25,6 +30,16 @@ export function mockGenerateStudyGuide({ sections, focus }: MockGenerateStudyGui
     lines.push(
       "",
       `=== ${section.label} ===`,
+      snippet + (trimmed.length > SECTION_SNIPPET_LENGTH ? "…" : "")
+    );
+  }
+
+  if (notes) {
+    const trimmed = notes.trim();
+    const snippet = trimmed.slice(0, SECTION_SNIPPET_LENGTH);
+    lines.push(
+      "",
+      "=== Student's own notes ===",
       snippet + (trimmed.length > SECTION_SNIPPET_LENGTH ? "…" : "")
     );
   }

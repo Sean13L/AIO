@@ -107,6 +107,13 @@ model study_guides {
   // definitions") — persisted so Regenerate can reuse or let them tweak it,
   // instead of asking them to retype it every time.
   focus                String?
+  // Extracted/pasted text from files and/or pasted text the user supplied
+  // at generation time to supplement the lecture material (e.g. their own
+  // course notes) — concatenated into one blob, not per-file, since it's
+  // only ever read as a single extra section. Persisted (not just used
+  // transiently) so Regenerate can fold it back in again; the original
+  // uploaded file(s), if any, are never stored — only their extracted text.
+  notes                String?
   content              String
   used_mock            Boolean               @default(false)
   // Alternate study formats generated FROM this guide's content (not from

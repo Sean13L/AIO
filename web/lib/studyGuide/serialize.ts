@@ -38,6 +38,7 @@ export function serializeStudyGuide(guide: StudyGuideWithSources) {
     id: guide.id,
     title: guide.title,
     focus: guide.focus,
+    notes: guide.notes,
     content: guide.content,
     used_mock: guide.used_mock,
     flashcards: parseFlashcards(guide.flashcards),

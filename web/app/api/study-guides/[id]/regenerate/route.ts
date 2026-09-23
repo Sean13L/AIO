@@ -37,7 +37,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }));
 
   const { sections } = await buildStudyGuideMaterial(userId, selections);
-  if (sections.length === 0) {
+  if (sections.length === 0 && !existing.notes) {
     return NextResponse.json(
       {
         error:
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   const focus = parsed.data.focus !== undefined ? parsed.data.focus || null : existing.focus;
-  const { content, usedMock } = await generateStudyGuide({ sections, focus });
+  const { content, usedMock } = await generateStudyGuide({ sections, focus, notes: existing.notes });
 
   const updated = await prisma.study_guides.update({
     where: { id },

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthGate } from "@/lib/useAuthGate";
 import { api } from "@/lib/api";
@@ -15,6 +15,19 @@ interface ContentSelection {
   include_transcript: boolean;
 }
 
+function hasSelectableContent(lecture: LectureWithCourse): boolean {
+  return Boolean(lecture.topics || lecture.slides_url || lecture.transcript || lecture.transcript_summary);
+}
+
+function defaultSelectionFor(lecture: LectureWithCourse): ContentSelection {
+  // Only offer/default-check content types this lecture actually has.
+  return {
+    include_topics: Boolean(lecture.topics),
+    include_slides: Boolean(lecture.slides_url),
+    include_transcript: Boolean(lecture.transcript || lecture.transcript_summary),
+  };
+}
+
 export default function NewStudyGuidePage() {
   const { email, ready } = useAuthGate();
   const router = useRouter();
@@ -24,6 +37,9 @@ export default function NewStudyGuidePage() {
   const [selections, setSelections] = useState<Record<string, ContentSelection>>({});
   const [title, setTitle] = useState("");
   const [focus, setFocus] = useState("");
+  const [notesText, setNotesText] = useState("");
+  const [notesFiles, setNotesFiles] = useState<File[]>([]);
+  const notesFileInputRef = useRef<HTMLInputElement>(null);
   const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
@@ -46,16 +62,8 @@ export default function NewStudyGuidePage() {
   function toggleLecture(lecture: LectureWithCourse) {
     setSelections((prev) => {
       const next = { ...prev };
-      if (next[lecture.id]) {
-        delete next[lecture.id];
-      } else {
-        // Only offer/default-check content types this lecture actually has.
-        next[lecture.id] = {
-          include_topics: Boolean(lecture.topics),
-          include_slides: Boolean(lecture.slides_url),
-          include_transcript: Boolean(lecture.transcript || lecture.transcript_summary),
-        };
-      }
+      if (next[lecture.id]) delete next[lecture.id];
+      else next[lecture.id] = defaultSelectionFor(lecture);
       return next;
     });
   }
@@ -68,11 +76,45 @@ export default function NewStudyGuidePage() {
     });
   }
 
+  // Shared by both the global and per-course "Select all" / "Clear"
+  // buttons — selecting skips lectures with nothing to select (same as
+  // their individually-disabled checkbox), clearing just drops whichever of
+  // the given lectures happen to be selected.
+  function selectAll(lecturesToSelect: LectureWithCourse[]) {
+    setSelections((prev) => {
+      const next = { ...prev };
+      for (const lecture of lecturesToSelect) {
+        if (hasSelectableContent(lecture)) next[lecture.id] = defaultSelectionFor(lecture);
+      }
+      return next;
+    });
+  }
+
+  function clearSelection(lecturesToClear: LectureWithCourse[]) {
+    setSelections((prev) => {
+      const next = { ...prev };
+      for (const lecture of lecturesToClear) delete next[lecture.id];
+      return next;
+    });
+  }
+
+  function handleNotesFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const picked = Array.from(e.target.files ?? []);
+    setNotesFiles((prev) => [...prev, ...picked]);
+    e.target.value = "";
+  }
+
+  function removeNotesFile(index: number) {
+    setNotesFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
   const selectedCount = Object.keys(selections).length;
+  const hasNotes = notesText.trim().length > 0 || notesFiles.length > 0;
+  const canGenerate = selectedCount > 0 || hasNotes;
 
   async function handleGenerate(e: React.FormEvent) {
     e.preventDefault();
-    if (selectedCount === 0) return;
+    if (!canGenerate) return;
     setGenerating(true);
     setError(null);
     try {
@@ -83,6 +125,8 @@ export default function NewStudyGuidePage() {
           lecture_id,
           ...content,
         })),
+        notesText: notesText.trim() || undefined,
+        notesFiles: notesFiles.length > 0 ? notesFiles : undefined,
       });
       router.push(`/study-guides/${guide.id}`);
     } catch (err) {
@@ -102,6 +146,8 @@ export default function NewStudyGuidePage() {
     );
   }
 
+  const allLectures = lectures ?? [];
+
   return (
     <div>
       <p>
@@ -110,28 +156,68 @@ export default function NewStudyGuidePage() {
       <h1>New study guide</h1>
       <p className="muted">
         Select the lectures — and which of their topics, slides, or transcript — to combine into
-        one study guide.
+        one study guide. Add your own notes below to supplement them, or build a guide from notes
+        alone.
       </p>
       {error && <p className="error">{error}</p>}
 
       {lectures === null ? (
         <p className="muted">Loading…</p>
-      ) : lectures.length === 0 ? (
-        <div className="empty-state">
-          <span className="empty-state-icon" aria-hidden="true">
-            🎓
-          </span>
-          <h3>No lectures yet</h3>
-          <p>
-            Lectures come from a course&apos;s syllabus schedule. <Link href="/upload">Upload one</Link>{" "}
-            first.
-          </p>
-        </div>
       ) : (
         <form onSubmit={handleGenerate}>
+          {allLectures.length > 0 && (
+            <div className="actions" style={{ marginBottom: "0.85rem" }}>
+              <button type="button" className="secondary" onClick={() => selectAll(allLectures)}>
+                Select all lectures
+              </button>
+              <button type="button" className="secondary" onClick={() => clearSelection(allLectures)}>
+                Clear selection
+              </button>
+            </div>
+          )}
+
+          {allLectures.length === 0 && (
+            <div className="empty-state">
+              <span className="empty-state-icon" aria-hidden="true">
+                🎓
+              </span>
+              <h3>No lectures yet</h3>
+              <p>
+                Lectures come from a course&apos;s syllabus schedule —{" "}
+                <Link href="/upload">upload one</Link>, or build a guide from your own notes below
+                instead.
+              </p>
+            </div>
+          )}
+
           {byCourse.map((group) => (
             <div key={group.key} className="card">
-              <h2>{group.label}</h2>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "0.6rem",
+                }}
+              >
+                <h2 style={{ margin: 0 }}>{group.label}</h2>
+                <div className="actions">
+                  <button
+                    type="button"
+                    className="secondary"
+                    onClick={() => selectAll(group.lectures)}
+                  >
+                    Select all
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary"
+                    onClick={() => clearSelection(group.lectures)}
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
               <ul className="lecture-picker-list">
                 {group.lectures.map((lecture) => {
                   const selection = selections[lecture.id];
@@ -198,6 +284,57 @@ export default function NewStudyGuidePage() {
           ))}
 
           <div className="card">
+            <h2>Your own notes</h2>
+            <p className="muted" style={{ marginBottom: "0.6rem" }}>
+              Optional — supplements the lecture material above (or stands alone if you don&apos;t
+              select any lectures).
+            </p>
+            <label>
+              <strong>Files</strong> (.pdf, .docx, .txt, .md)
+              <br />
+              <input
+                ref={notesFileInputRef}
+                type="file"
+                accept=".pdf,.docx,.txt,.md"
+                multiple
+                onChange={handleNotesFileChange}
+              />
+            </label>
+            {notesFiles.length > 0 && (
+              <ul style={{ marginTop: "0.6rem", listStyle: "none", padding: 0 }}>
+                {notesFiles.map((file, i) => (
+                  <li
+                    key={`${file.name}-${i}`}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "0.6rem",
+                      padding: "0.35rem 0",
+                    }}
+                  >
+                    <span>{file.name}</span>
+                    <button type="button" className="secondary" onClick={() => removeNotesFile(i)}>
+                      Remove
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <label style={{ display: "block", marginTop: "0.85rem" }}>
+              <strong>Or paste text</strong>
+              <br />
+              <textarea
+                value={notesText}
+                onChange={(e) => setNotesText(e.target.value)}
+                rows={5}
+                style={{ width: "100%", marginTop: "0.3rem" }}
+                placeholder="Paste your own notes here…"
+              />
+            </label>
+          </div>
+
+          <div className="card">
             <h2>Details</h2>
             <p>
               <label style={{ display: "block" }}>
@@ -224,7 +361,7 @@ export default function NewStudyGuidePage() {
                 />
               </label>
             </p>
-            <button type="submit" disabled={generating || selectedCount === 0}>
+            <button type="submit" disabled={generating || !canGenerate}>
               {generating
                 ? "Generating…"
                 : `Generate study guide${selectedCount > 0 ? ` (${selectedCount} lecture${selectedCount === 1 ? "" : "s"})` : ""}`}

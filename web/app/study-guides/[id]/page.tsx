@@ -137,11 +137,22 @@ export default function StudyGuideDetailPage({ params }: { params: Promise<{ id:
         <p style={{ whiteSpace: "pre-wrap" }}>{guide.content}</p>
       </div>
 
+      {guide.notes && (
+        <div className="card">
+          <h2>Your notes</h2>
+          <p className="muted" style={{ marginBottom: "0.6rem" }}>
+            Supplementary notes included when this guide was generated.
+          </p>
+          <p style={{ whiteSpace: "pre-wrap" }}>{guide.notes}</p>
+        </div>
+      )}
+
       <div className="card">
         <h2>Regenerate</h2>
         <p className="muted" style={{ marginBottom: "0.6rem" }}>
-          Rebuilds this guide from the same lectures/content below — picks up anything that&apos;s
-          changed since (new slides, an edited transcript). Optionally adjust the focus first.
+          Rebuilds this guide from the same lectures/content below{guide.notes ? " and notes" : ""}{" "}
+          — picks up anything that&apos;s changed since (new slides, an edited transcript).
+          Optionally adjust the focus first.
         </p>
         <textarea
           value={focusDraft}

@@ -132,6 +132,7 @@ export interface StudyGuideDetail {
   id: string;
   title: string;
   focus: string | null;
+  notes: string | null;
   content: string;
   used_mock: boolean;
   flashcards: Flashcard[] | null;

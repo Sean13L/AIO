@@ -33,3 +33,8 @@ export const SYLLABUS_MAX_BYTES = 15 * 1024 * 1024;
 
 export const SLIDES_EXTENSIONS = [".pdf", ".docx", ".txt", ".md"] as const;
 export const SLIDES_MAX_BYTES = 25 * 1024 * 1024;
+
+// Supplementary notes attached to a study guide — parsed for their text and
+// discarded, not archived to storage like syllabi/slides (see study_guides.notes).
+export const NOTES_EXTENSIONS = [".pdf", ".docx", ".txt", ".md"] as const;
+export const NOTES_MAX_BYTES = 15 * 1024 * 1024;

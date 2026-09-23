@@ -71,19 +71,20 @@ export const extracurricularUpdateSchema = z.object({
   content: z.string().nullable().optional(),
 });
 
+export const studyGuideLectureSelectionSchema = z.object({
+  lecture_id: z.string().uuid(),
+  include_topics: z.boolean().optional().default(true),
+  include_slides: z.boolean().optional().default(true),
+  include_transcript: z.boolean().optional().default(true),
+});
+
 export const studyGuideCreateSchema = z.object({
   title: z.string().trim().min(1).max(200).optional(),
   focus: z.string().trim().max(500).optional(),
-  lectures: z
-    .array(
-      z.object({
-        lecture_id: z.string().uuid(),
-        include_topics: z.boolean().optional().default(true),
-        include_slides: z.boolean().optional().default(true),
-        include_transcript: z.boolean().optional().default(true),
-      })
-    )
-    .min(1, "Select at least one lecture"),
+  // No minimum here — a guide can be built from uploaded/pasted notes alone
+  // with zero lectures selected; the route enforces "at least *something*
+  // to build from" across lectures + notes combined, not lectures alone.
+  lectures: z.array(studyGuideLectureSelectionSchema).default([]),
 });
 
 // Regenerating reuses the study guide's existing lecture/content-type
