@@ -10,6 +10,7 @@ import type { Lecture } from "@/lib/types";
 import { PREVIEW_STATUS_TAG } from "@/lib/uiColors";
 import { useLectureTranscription } from "@/lib/useLectureTranscription";
 import { useTimeFormatPreference } from "@/lib/timeFormat";
+import { Markdown } from "@/components/Markdown";
 
 const PREVIEW_STATUS_LABELS: Record<Lecture["preview_status"], string> = {
   not_generated: "Not generated yet",
@@ -289,7 +290,7 @@ export default function LecturePage({
       <div className="card">
         <h2>Pre-lecture preview</h2>
         {lecture.preview_content ? (
-          <p style={{ whiteSpace: "pre-wrap" }}>{lecture.preview_content}</p>
+          <Markdown>{lecture.preview_content}</Markdown>
         ) : (
           <p className="muted">
             No preview generated yet. It leans on the uploaded slides when available, and falls
@@ -380,7 +381,7 @@ export default function LecturePage({
                 AI — it&apos;s just a snippet of the transcript, not an actual summary.
               </p>
             )}
-            <p style={{ whiteSpace: "pre-wrap" }}>{lecture.transcript_summary}</p>
+            <Markdown>{lecture.transcript_summary}</Markdown>
           </>
         ) : (
           <p className="muted">
