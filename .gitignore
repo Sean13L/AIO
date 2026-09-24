@@ -8,3 +8,4 @@ web/.next/
 web/.data/
 *.tsbuildinfo
 .claude/settings.local.json
+.DS_Store
