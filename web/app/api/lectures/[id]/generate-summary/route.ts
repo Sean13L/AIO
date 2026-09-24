@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/session";
 import { generateTranscriptSummary } from "@/lib/transcription/generateTranscriptSummary";
-import { geminiUsageLimitMessage, recordGeminiCallAndCheckLimit } from "@/lib/geminiUsage";
+import {
+  geminiUsageLimitMessage,
+  recordGeminiCallAndCheckLimit,
+  refundGeminiCall,
+} from "@/lib/geminiUsage";
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const userId = await getCurrentUserId();
@@ -26,10 +30,17 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: geminiUsageLimitMessage(usage.limit) }, { status: 429 });
   }
 
-  const { summary, usedMock } = await generateTranscriptSummary({
-    courseCode: lecture.courses.course_code,
-    transcript: lecture.transcript,
-  });
+  let generated: Awaited<ReturnType<typeof generateTranscriptSummary>>;
+  try {
+    generated = await generateTranscriptSummary({
+      courseCode: lecture.courses.course_code,
+      transcript: lecture.transcript,
+    });
+  } catch (err) {
+    await refundGeminiCall(userId, usage.date);
+    throw err;
+  }
+  const { summary, usedMock } = generated;
 
   const updated = await prisma.lectures.update({
     where: { id },

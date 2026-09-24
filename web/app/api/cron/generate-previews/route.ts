@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { downloadFile, filenameFromFileUrl } from "@/lib/storage";
-import { extractRawText } from "@/lib/extraction/parseFile";
-import { generatePreview } from "@/lib/preview/generatePreview";
+import { runPreviewCron } from "@/lib/preview/runPreviewCron";
+import { pruneGeminiErrors } from "@/lib/geminiErrors";
+
+// runPreviewCron() stops itself at a 50s time budget; this is the hard
+// ceiling above it (safe on every Vercel plan).
+export const maxDuration = 60;
 
 // Triggered by Vercel Cron (see vercel.json) in place of the always-on
 // polling loop the old worker/src/scheduler.ts ran. Vercel sends
@@ -24,45 +26,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Not configured" }, { status: 503 });
   }
 
-  const leadHours = Number(process.env.PREVIEW_LEAD_HOURS ?? 48);
-  const now = new Date();
-  const cutoff = new Date(now.getTime() + leadHours * 60 * 60 * 1000);
+  const result = await runPreviewCron();
+  console.log("[generate-previews cron]", JSON.stringify(result));
 
-  const dueLectures = await prisma.lectures.findMany({
-    where: {
-      preview_status: "not_generated",
-      scheduled_at: { gte: now, lte: cutoff },
-    },
-    include: { courses: { select: { course_code: true } } },
-  });
-
-  let generated = 0;
-  let failed = 0;
-
-  for (const lecture of dueLectures) {
-    try {
-      const filename = filenameFromFileUrl(lecture.slides_url);
-      const slidesBuffer = filename ? await downloadFile("lectures", filename) : null;
-      const slidesText = slidesBuffer
-        ? await extractRawText({ kind: "file", buffer: slidesBuffer, fileName: filename! })
-        : null;
-
-      const previewContent = await generatePreview({
-        courseCode: lecture.courses.course_code,
-        topics: lecture.topics,
-        slidesText,
-      });
-
-      await prisma.lectures.update({
-        where: { id: lecture.id },
-        data: { preview_content: previewContent, preview_status: "generated" },
-      });
-      generated += 1;
-    } catch (err) {
-      failed += 1;
-      console.error(`[generate-previews cron] lecture ${lecture.id} failed:`, err);
-    }
+  // Housekeeping for the gemini_errors record — piggybacks on the only
+  // scheduled job Studdy already has, rather than adding a second cron.
+  try {
+    await pruneGeminiErrors();
+  } catch (err) {
+    console.error("[generate-previews cron] failed to prune gemini_errors:", err);
   }
 
-  return NextResponse.json({ checked: dueLectures.length, generated, failed });
+  return NextResponse.json(result);
 }

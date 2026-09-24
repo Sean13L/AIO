@@ -7,7 +7,11 @@ import { ingestSyllabus } from "@/lib/ingestSyllabus";
 import type { SyllabusInput } from "@/lib/extraction/parseFile";
 import { uploadFile } from "@/lib/storage";
 import { assertAllowedUpload, SYLLABUS_EXTENSIONS, SYLLABUS_MAX_BYTES } from "@/lib/uploadValidation";
-import { geminiUsageLimitMessage, recordGeminiCallAndCheckLimit } from "@/lib/geminiUsage";
+import {
+  geminiUsageLimitMessage,
+  recordGeminiCallAndCheckLimit,
+  refundGeminiCall,
+} from "@/lib/geminiUsage";
 
 export async function POST(req: NextRequest) {
   const userId = await getCurrentUserId();
@@ -67,12 +71,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: geminiUsageLimitMessage(usage.limit) }, { status: 429 });
     }
 
-    const result = await ingestSyllabus({
-      userId,
-      fileUrl: fileUrls.join(", "),
-      inputs,
-      courseId,
-    });
+    let result: Awaited<ReturnType<typeof ingestSyllabus>>;
+    try {
+      result = await ingestSyllabus({
+        userId,
+        fileUrl: fileUrls.join(", "),
+        inputs,
+        courseId,
+      });
+    } catch (err) {
+      await refundGeminiCall(userId, usage.date);
+      throw err;
+    }
     return NextResponse.json(result, { status: 201 });
   } catch (err) {
     console.error(err);

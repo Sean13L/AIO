@@ -73,7 +73,7 @@ export async function generateStudyGuide({
     model,
     contents: userContent,
     config: { systemInstruction: SYSTEM_PROMPT },
-  });
+  }, "study_guide");
 
   if (!response.text) {
     throw new Error("Gemini did not return text for the study guide");

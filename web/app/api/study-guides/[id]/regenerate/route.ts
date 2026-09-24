@@ -5,7 +5,11 @@ import { studyGuideRegenerateSchema } from "@/lib/validation";
 import { buildStudyGuideMaterial } from "@/lib/studyGuide/buildStudyGuideMaterial";
 import { generateStudyGuide } from "@/lib/studyGuide/generateStudyGuide";
 import { STUDY_GUIDE_DETAIL_INCLUDE, serializeStudyGuide } from "@/lib/studyGuide/serialize";
-import { geminiUsageLimitMessage, recordGeminiCallAndCheckLimit } from "@/lib/geminiUsage";
+import {
+  geminiUsageLimitMessage,
+  recordGeminiCallAndCheckLimit,
+  refundGeminiCall,
+} from "@/lib/geminiUsage";
 
 // Re-runs generation from the guide's existing lecture/content-type
 // selections (study_guide_sources) — not a new selection. This is the
@@ -54,7 +58,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   const focus = parsed.data.focus !== undefined ? parsed.data.focus || null : existing.focus;
-  const { content, usedMock } = await generateStudyGuide({ sections, focus, notes: existing.notes });
+  let generated: Awaited<ReturnType<typeof generateStudyGuide>>;
+  try {
+    generated = await generateStudyGuide({ sections, focus, notes: existing.notes });
+  } catch (err) {
+    await refundGeminiCall(userId, usage.date);
+    throw err;
+  }
+  const { content, usedMock } = generated;
 
   const updated = await prisma.study_guides.update({
     where: { id },

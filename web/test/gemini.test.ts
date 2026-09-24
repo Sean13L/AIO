@@ -1,5 +1,16 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { generateContentWithFallback } from "@/lib/gemini";
+import { geminiErrorStatus, recordGeminiError } from "@/lib/geminiErrors";
+
+// Unit tests — keep failed-attempt logging out of the (shared) database.
+vi.mock("@/lib/geminiErrors", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/geminiErrors")>()),
+  recordGeminiError: vi.fn(async () => {}),
+}));
+
+beforeEach(() => {
+  vi.mocked(recordGeminiError).mockClear();
+});
 import type { GoogleGenAI } from "@google/genai";
 
 function fakeClient(generateContent: (params: { model: string }) => Promise<unknown>) {
@@ -22,7 +33,7 @@ describe("generateContentWithFallback", () => {
     const result = await generateContentWithFallback(client, {
       model: "gemini-3.6-flash",
       contents: "hi",
-    });
+    }, "study_guide");
 
     expect(result).toEqual({ text: "ok:gemini-3.6-flash" });
     expect(generateContent).toHaveBeenCalledTimes(1);
@@ -38,7 +49,7 @@ describe("generateContentWithFallback", () => {
     const result = await generateContentWithFallback(client, {
       model: "gemini-3.6-flash",
       contents: "hi",
-    });
+    }, "study_guide");
 
     expect(result).toEqual({ text: "ok:gemini-3.7-flash" });
     expect(generateContent).toHaveBeenCalledTimes(2);
@@ -53,7 +64,7 @@ describe("generateContentWithFallback", () => {
     const client = fakeClient(generateContent);
 
     await expect(
-      generateContentWithFallback(client, { model: "gemini-3.6-flash", contents: "hi" })
+      generateContentWithFallback(client, { model: "gemini-3.6-flash", contents: "hi" }, "study_guide")
     ).rejects.toThrow();
 
     expect(attempted).toEqual([
@@ -76,7 +87,7 @@ describe("generateContentWithFallback", () => {
     const result = await generateContentWithFallback(client, {
       model: "gemini-3.6-flash",
       contents: "hi",
-    });
+    }, "study_guide");
 
     expect(result).toEqual({ text: "ok:gemini-3.7-flash" });
   });
@@ -88,7 +99,7 @@ describe("generateContentWithFallback", () => {
     const client = fakeClient(generateContent);
 
     await expect(
-      generateContentWithFallback(client, { model: "gemini-3.6-flash", contents: "hi" })
+      generateContentWithFallback(client, { model: "gemini-3.6-flash", contents: "hi" }, "study_guide")
     ).rejects.toThrow(/invalid api key/);
     expect(generateContent).toHaveBeenCalledTimes(1);
   });
@@ -105,9 +116,36 @@ describe("generateContentWithFallback", () => {
     const result = await generateContentWithFallback(client, {
       model: "gemini-3.5-flash",
       contents: "hi",
-    });
+    }, "study_guide");
 
     expect(result).toEqual({ text: "ok" });
     expect(attempted).toEqual(["gemini-3.5-flash"]);
+  });
+
+  it("records every failed attempt under the calling feature", async () => {
+    const generateContent = vi.fn(async ({ model }: { model: string }) => {
+      if (model === "gemini-3.6-flash") throw quotaExhaustedError();
+      if (model === "gemini-3.7-flash") throw overloadedError();
+      return { text: "ok" };
+    });
+
+    await generateContentWithFallback(
+      fakeClient(generateContent),
+      { model: "gemini-3.6-flash", contents: "hi" },
+      "flashcards"
+    );
+
+    expect(vi.mocked(recordGeminiError).mock.calls.map(([feature, model]) => [feature, model])).toEqual([
+      ["flashcards", "gemini-3.6-flash"],
+      ["flashcards", "gemini-3.7-flash"],
+    ]);
+  });
+});
+
+describe("geminiErrorStatus", () => {
+  it("reads the SDK error's numeric status, else the JSON body's code", () => {
+    expect(geminiErrorStatus(Object.assign(new Error("x"), { status: 429 }))).toBe(429);
+    expect(geminiErrorStatus(overloadedError())).toBe(503);
+    expect(geminiErrorStatus(new Error("socket hang up"))).toBeNull();
   });
 });

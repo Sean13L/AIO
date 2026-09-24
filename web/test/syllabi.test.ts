@@ -189,4 +189,26 @@ describe.skipIf(!hasDb)("Syllabus ingestion API route (requires DATABASE_URL)", 
     );
     expect(res.status).toBe(400);
   });
+
+  it("refunds the daily AI budget when the upload can't be processed", async () => {
+    await prisma.gemini_usage.deleteMany({ where: { user_id: mockSession.userId } });
+
+    const { POST } = await import("@/app/api/syllabi/route");
+    const formData = new FormData();
+    formData.append(
+      "file",
+      new File([Buffer.from("%PDF-1.4 this is not really a pdf")], "broken.pdf", {
+        type: "application/pdf",
+      })
+    );
+
+    const res = await POST(
+      new NextRequest("http://localhost/api/syllabi", { method: "POST", body: formData })
+    );
+    expect(res.status).toBe(500);
+
+    const usage = await prisma.gemini_usage.findFirst({ where: { user_id: mockSession.userId } });
+    expect(usage?.count ?? 0).toBe(0);
+    await prisma.gemini_usage.deleteMany({ where: { user_id: mockSession.userId } });
+  });
 });

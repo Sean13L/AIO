@@ -1,4 +1,5 @@
 import type { GenerateContentParameters, GenerateContentResponse, GoogleGenAI } from "@google/genai";
+import { recordGeminiError, type GeminiFeature } from "./geminiErrors";
 
 // Sibling models to fall back through when the configured model returns a
 // capacity/quota error — observed during a real Gemini demand spike on
@@ -24,7 +25,7 @@ const FALLBACK_MODELS = [
   "gemini-flash-latest",
 ];
 
-function isCapacityError(err: unknown): boolean {
+export function isCapacityError(err: unknown): boolean {
   const message = err instanceof Error ? err.message : String(err);
   // 503/UNAVAILABLE: the model is temporarily overloaded. 429/
   // RESOURCE_EXHAUSTED: this specific model's quota is exhausted (or, per
@@ -38,10 +39,13 @@ function isCapacityError(err: unknown): boolean {
 // Wraps client.models.generateContent() with fallback across sibling models
 // when the requested one is temporarily overloaded. Only retries on a
 // capacity error — anything else (bad request, auth failure, safety block)
-// fails immediately since switching models wouldn't fix it.
+// fails immediately since switching models wouldn't fix it. Every failed
+// attempt is recorded in gemini_errors under `feature`, so there's a lasting
+// record of which features hit Gemini's limits.
 export async function generateContentWithFallback(
   client: GoogleGenAI,
-  params: GenerateContentParameters
+  params: GenerateContentParameters,
+  feature: GeminiFeature
 ): Promise<GenerateContentResponse> {
   const modelsToTry = [params.model, ...FALLBACK_MODELS.filter((m) => m !== params.model)];
   let lastError: unknown;
@@ -51,6 +55,7 @@ export async function generateContentWithFallback(
       return await client.models.generateContent({ ...params, model });
     } catch (err) {
       lastError = err;
+      await recordGeminiError(feature, model, err);
       if (!isCapacityError(err)) throw err;
       console.warn(`[gemini] ${model} is unavailable (capacity), falling back to next model`, err);
     }

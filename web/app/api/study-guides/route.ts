@@ -5,7 +5,11 @@ import { studyGuideCreateSchema } from "@/lib/validation";
 import { buildStudyGuideMaterial } from "@/lib/studyGuide/buildStudyGuideMaterial";
 import { generateStudyGuide } from "@/lib/studyGuide/generateStudyGuide";
 import { STUDY_GUIDE_DETAIL_INCLUDE, serializeStudyGuide } from "@/lib/studyGuide/serialize";
-import { geminiUsageLimitMessage, recordGeminiCallAndCheckLimit } from "@/lib/geminiUsage";
+import {
+  geminiUsageLimitMessage,
+  recordGeminiCallAndCheckLimit,
+  refundGeminiCall,
+} from "@/lib/geminiUsage";
 import { extractRawText } from "@/lib/extraction/parseFile";
 import { assertAllowedUpload, NOTES_EXTENSIONS, NOTES_MAX_BYTES } from "@/lib/uploadValidation";
 
@@ -96,11 +100,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: geminiUsageLimitMessage(usage.limit) }, { status: 429 });
   }
 
-  const { content, usedMock } = await generateStudyGuide({
-    sections,
-    focus: focus?.trim() || null,
-    notes,
-  });
+  let generated: Awaited<ReturnType<typeof generateStudyGuide>>;
+  try {
+    generated = await generateStudyGuide({ sections, focus: focus?.trim() || null, notes });
+  } catch (err) {
+    await refundGeminiCall(userId, usage.date);
+    throw err;
+  }
+  const { content, usedMock } = generated;
 
   const defaultTitle =
     sections.length === 1

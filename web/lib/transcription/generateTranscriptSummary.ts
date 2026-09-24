@@ -45,7 +45,7 @@ export async function generateTranscriptSummary({
     model,
     contents: `Course: ${courseCode}\n\nLecture transcript:\n\n${transcript}`,
     config: { systemInstruction: SYSTEM_PROMPT },
-  });
+  }, "transcript_summary");
 
   if (!response.text) {
     throw new Error("Gemini did not return text for the transcript summary");

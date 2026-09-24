@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/session";
 import { generateFlashcards } from "@/lib/studyGuide/generateFlashcards";
-import { geminiUsageLimitMessage, recordGeminiCallAndCheckLimit } from "@/lib/geminiUsage";
+import {
+  geminiUsageLimitMessage,
+  recordGeminiCallAndCheckLimit,
+  refundGeminiCall,
+} from "@/lib/geminiUsage";
 
 // Generates (or regenerates — calling this again just overwrites) a
 // flashcard set from the study guide's own content, not the original
@@ -21,10 +25,17 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: geminiUsageLimitMessage(usage.limit) }, { status: 429 });
   }
 
-  const { cards, usedMock } = await generateFlashcards({
-    studyGuideTitle: guide.title,
-    studyGuideContent: guide.content,
-  });
+  let generated: Awaited<ReturnType<typeof generateFlashcards>>;
+  try {
+    generated = await generateFlashcards({
+      studyGuideTitle: guide.title,
+      studyGuideContent: guide.content,
+    });
+  } catch (err) {
+    await refundGeminiCall(userId, usage.date);
+    throw err;
+  }
+  const { cards, usedMock } = generated;
 
   const updated = await prisma.study_guides.update({
     where: { id },

@@ -201,7 +201,7 @@ export async function extractSyllabus({
         },
       ],
     },
-  });
+  }, "syllabus_extraction");
 
   const call = response.functionCalls?.[0];
   if (!call?.args) {

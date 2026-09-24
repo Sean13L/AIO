@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/session";
 import { generateQuiz } from "@/lib/studyGuide/generateQuiz";
-import { geminiUsageLimitMessage, recordGeminiCallAndCheckLimit } from "@/lib/geminiUsage";
+import {
+  geminiUsageLimitMessage,
+  recordGeminiCallAndCheckLimit,
+  refundGeminiCall,
+} from "@/lib/geminiUsage";
 
 // Generates (or regenerates — calling this again just overwrites) a
 // multiple-choice quiz from the study guide's own content. See flashcards
@@ -21,10 +25,17 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: geminiUsageLimitMessage(usage.limit) }, { status: 429 });
   }
 
-  const { questions, usedMock } = await generateQuiz({
-    studyGuideTitle: guide.title,
-    studyGuideContent: guide.content,
-  });
+  let generated: Awaited<ReturnType<typeof generateQuiz>>;
+  try {
+    generated = await generateQuiz({
+      studyGuideTitle: guide.title,
+      studyGuideContent: guide.content,
+    });
+  } catch (err) {
+    await refundGeminiCall(userId, usage.date);
+    throw err;
+  }
+  const { questions, usedMock } = generated;
 
   const updated = await prisma.study_guides.update({
     where: { id },

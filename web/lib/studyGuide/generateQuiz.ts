@@ -103,7 +103,7 @@ export async function generateQuiz({
         },
       ],
     },
-  });
+  }, "quiz");
 
   const call = response.functionCalls?.[0];
   if (!call?.args) {

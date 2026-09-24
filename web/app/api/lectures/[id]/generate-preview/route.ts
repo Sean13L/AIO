@@ -4,7 +4,11 @@ import { getCurrentUserId } from "@/lib/session";
 import { downloadFile, filenameFromFileUrl } from "@/lib/storage";
 import { extractRawText } from "@/lib/extraction/parseFile";
 import { generatePreview } from "@/lib/preview/generatePreview";
-import { geminiUsageLimitMessage, recordGeminiCallAndCheckLimit } from "@/lib/geminiUsage";
+import {
+  geminiUsageLimitMessage,
+  recordGeminiCallAndCheckLimit,
+  refundGeminiCall,
+} from "@/lib/geminiUsage";
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const userId = await getCurrentUserId();
@@ -22,17 +26,23 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: geminiUsageLimitMessage(usage.limit) }, { status: 429 });
   }
 
-  const filename = filenameFromFileUrl(lecture.slides_url);
-  const slidesBuffer = filename ? await downloadFile("lectures", filename) : null;
-  const slidesText = slidesBuffer
-    ? await extractRawText({ kind: "file", buffer: slidesBuffer, fileName: filename! })
-    : null;
+  let previewContent: string;
+  try {
+    const filename = filenameFromFileUrl(lecture.slides_url);
+    const slidesBuffer = filename ? await downloadFile("lectures", filename) : null;
+    const slidesText = slidesBuffer
+      ? await extractRawText({ kind: "file", buffer: slidesBuffer, fileName: filename! })
+      : null;
 
-  const previewContent = await generatePreview({
-    courseCode: lecture.courses.course_code,
-    topics: lecture.topics,
-    slidesText,
-  });
+    previewContent = await generatePreview({
+      courseCode: lecture.courses.course_code,
+      topics: lecture.topics,
+      slidesText,
+    });
+  } catch (err) {
+    await refundGeminiCall(userId, usage.date);
+    throw err;
+  }
 
   const updated = await prisma.lectures.update({
     where: { id },

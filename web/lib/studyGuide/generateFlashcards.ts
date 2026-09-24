@@ -85,7 +85,7 @@ export async function generateFlashcards({
         },
       ],
     },
-  });
+  }, "flashcards");
 
   const call = response.functionCalls?.[0];
   if (!call?.args) {

@@ -17,6 +17,10 @@ export interface GeminiUsageResult {
   allowed: boolean;
   count: number;
   limit: number;
+  // The UTC day this call was counted against — passed back to
+  // refundGeminiCall() so a request that straddles midnight refunds the
+  // day it was actually charged to.
+  date: Date;
 }
 
 // Atomically records one Gemini-backed call attempt for this user today and
@@ -37,7 +41,23 @@ export async function recordGeminiCallAndCheckLimit(userId: string): Promise<Gem
     update: { count: { increment: 1 } },
   });
 
-  return { allowed: usage.count <= limit, count: usage.count, limit };
+  return { allowed: usage.count <= limit, count: usage.count, limit, date };
+}
+
+// Gives back the call recorded by recordGeminiCallAndCheckLimit() when the
+// work it was charged for fails (Gemini error after exhausting fallbacks,
+// unparseable upload, DB write failure) — users shouldn't lose a use of
+// their daily budget on something that produced nothing. Best-effort: never
+// throws, so the caller's original error is what surfaces.
+export async function refundGeminiCall(userId: string, date: Date): Promise<void> {
+  try {
+    await prisma.gemini_usage.updateMany({
+      where: { user_id: userId, date, count: { gt: 0 } },
+      data: { count: { decrement: 1 } },
+    });
+  } catch (err) {
+    console.error("[geminiUsage] failed to refund Gemini call", err);
+  }
 }
 
 // Shared across every route that enforces the cap, so the endpoint list in

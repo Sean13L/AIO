@@ -1,7 +1,11 @@
 import "dotenv/config";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { geminiDailyLimit, recordGeminiCallAndCheckLimit } from "@/lib/geminiUsage";
+import {
+  geminiDailyLimit,
+  recordGeminiCallAndCheckLimit,
+  refundGeminiCall,
+} from "@/lib/geminiUsage";
 
 const hasDb = Boolean(process.env.DATABASE_URL);
 const testEmail = `gemini-usage-test-${Date.now()}@example.com`;
@@ -50,10 +54,10 @@ describe.skipIf(!hasDb)("recordGeminiCallAndCheckLimit (requires DATABASE_URL)",
     vi.stubEnv("GEMINI_DAILY_LIMIT", "2");
 
     const first = await recordGeminiCallAndCheckLimit(userId);
-    expect(first).toEqual({ allowed: true, count: 1, limit: 2 });
+    expect(first).toMatchObject({ allowed: true, count: 1, limit: 2 });
 
     const second = await recordGeminiCallAndCheckLimit(userId);
-    expect(second).toEqual({ allowed: true, count: 2, limit: 2 });
+    expect(second).toMatchObject({ allowed: true, count: 2, limit: 2 });
 
     const third = await recordGeminiCallAndCheckLimit(userId);
     expect(third.allowed).toBe(false);
@@ -63,7 +67,7 @@ describe.skipIf(!hasDb)("recordGeminiCallAndCheckLimit (requires DATABASE_URL)",
       data: { email: `gemini-usage-test-other-${Date.now()}@example.com` },
     });
     const otherResult = await recordGeminiCallAndCheckLimit(otherUser.id);
-    expect(otherResult).toEqual({ allowed: true, count: 1, limit: 2 });
+    expect(otherResult).toMatchObject({ allowed: true, count: 1, limit: 2 });
 
     await prisma.gemini_usage.deleteMany({ where: { user_id: otherUser.id } });
     await prisma.user.delete({ where: { id: otherUser.id } });
@@ -73,7 +77,7 @@ describe.skipIf(!hasDb)("recordGeminiCallAndCheckLimit (requires DATABASE_URL)",
     vi.stubEnv("GEMINI_DAILY_LIMIT", "1");
 
     const today = await recordGeminiCallAndCheckLimit(userId);
-    expect(today).toEqual({ allowed: true, count: 1, limit: 1 });
+    expect(today).toMatchObject({ allowed: true, count: 1, limit: 1 });
 
     // Simulate "yesterday" by backdating the row directly, rather than
     // mocking the system clock — recordGeminiCallAndCheckLimit() derives
@@ -89,6 +93,20 @@ describe.skipIf(!hasDb)("recordGeminiCallAndCheckLimit (requires DATABASE_URL)",
     });
 
     const fresh = await recordGeminiCallAndCheckLimit(userId);
-    expect(fresh).toEqual({ allowed: true, count: 1, limit: 1 });
+    expect(fresh).toMatchObject({ allowed: true, count: 1, limit: 1 });
+  });
+
+  it("refundGeminiCall gives back one call for that day, never going below zero", async () => {
+    const first = await recordGeminiCallAndCheckLimit(userId);
+    await recordGeminiCallAndCheckLimit(userId);
+
+    await refundGeminiCall(userId, first.date);
+    const afterRefund = await prisma.gemini_usage.findFirst({ where: { user_id: userId } });
+    expect(afterRefund?.count).toBe(1);
+
+    await refundGeminiCall(userId, first.date);
+    await refundGeminiCall(userId, first.date);
+    const floored = await prisma.gemini_usage.findFirst({ where: { user_id: userId } });
+    expect(floored?.count).toBe(0);
   });
 });
