@@ -38,6 +38,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
       courseCode: lecture.courses.course_code,
       topics: lecture.topics,
       slidesText,
+      userId,
     });
   } catch (err) {
     await refundGeminiCall(userId, usage.date);

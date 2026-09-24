@@ -1,4 +1,5 @@
 import type {
+  AiUsageSummary,
   CalendarSyncTarget,
   Course,
   Extracurricular,
@@ -65,6 +66,8 @@ export interface ItemUpdateInput {
 }
 
 export const api = {
+  getAiUsage: () => request<AiUsageSummary>("/api/ai-usage"),
+
   listCourses: () => request<Course[]>("/api/courses"),
 
   createCourse: (input: CourseInput) =>

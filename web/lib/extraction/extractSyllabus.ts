@@ -149,6 +149,9 @@ export interface ExtractSyllabusOptions {
   syllabusText: string;
   apiKey?: string;
   model?: string;
+  // Who the request is for — stored with any Gemini error so users see
+  // their own failures on the AI usage page.
+  userId?: string | null;
 }
 
 // Callers need to know when the offline mock stood in for real Gemini
@@ -165,6 +168,7 @@ export async function extractSyllabus({
   syllabusText,
   apiKey = process.env.GEMINI_API_KEY,
   model = process.env.GEMINI_MODEL ?? "gemini-3.6-flash",
+  userId = null,
 }: ExtractSyllabusOptions): Promise<ExtractSyllabusResult> {
   if (!apiKey) {
     console.warn(
@@ -201,7 +205,7 @@ export async function extractSyllabus({
         },
       ],
     },
-  }, "syllabus_extraction");
+  }, { feature: "syllabus_extraction", userId });
 
   const call = response.functionCalls?.[0];
   if (!call?.args) {

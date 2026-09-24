@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
 
   let generated: Awaited<ReturnType<typeof generateStudyGuide>>;
   try {
-    generated = await generateStudyGuide({ sections, focus: focus?.trim() || null, notes });
+    generated = await generateStudyGuide({ sections, focus: focus?.trim() || null, notes, userId });
   } catch (err) {
     await refundGeminiCall(userId, usage.date);
     throw err;

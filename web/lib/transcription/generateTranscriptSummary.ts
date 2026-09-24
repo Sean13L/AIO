@@ -18,6 +18,9 @@ export interface GenerateTranscriptSummaryInput {
   transcript: string;
   apiKey?: string;
   model?: string;
+  // Who the request is for — stored with any Gemini error so users see
+  // their own failures on the AI usage page.
+  userId?: string | null;
 }
 
 export interface GenerateTranscriptSummaryResult {
@@ -30,6 +33,7 @@ export async function generateTranscriptSummary({
   transcript,
   apiKey = process.env.GEMINI_API_KEY,
   model = process.env.GEMINI_MODEL ?? "gemini-3.6-flash",
+  userId = null,
 }: GenerateTranscriptSummaryInput): Promise<GenerateTranscriptSummaryResult> {
   if (!apiKey) {
     console.warn(
@@ -45,7 +49,7 @@ export async function generateTranscriptSummary({
     model,
     contents: `Course: ${courseCode}\n\nLecture transcript:\n\n${transcript}`,
     config: { systemInstruction: SYSTEM_PROMPT },
-  }, "transcript_summary");
+  }, { feature: "transcript_summary", userId });
 
   if (!response.text) {
     throw new Error("Gemini did not return text for the transcript summary");

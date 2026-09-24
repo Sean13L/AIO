@@ -33,7 +33,7 @@ describe("generateContentWithFallback", () => {
     const result = await generateContentWithFallback(client, {
       model: "gemini-3.6-flash",
       contents: "hi",
-    }, "study_guide");
+    }, { feature: "study_guide" });
 
     expect(result).toEqual({ text: "ok:gemini-3.6-flash" });
     expect(generateContent).toHaveBeenCalledTimes(1);
@@ -49,7 +49,7 @@ describe("generateContentWithFallback", () => {
     const result = await generateContentWithFallback(client, {
       model: "gemini-3.6-flash",
       contents: "hi",
-    }, "study_guide");
+    }, { feature: "study_guide" });
 
     expect(result).toEqual({ text: "ok:gemini-3.7-flash" });
     expect(generateContent).toHaveBeenCalledTimes(2);
@@ -64,7 +64,7 @@ describe("generateContentWithFallback", () => {
     const client = fakeClient(generateContent);
 
     await expect(
-      generateContentWithFallback(client, { model: "gemini-3.6-flash", contents: "hi" }, "study_guide")
+      generateContentWithFallback(client, { model: "gemini-3.6-flash", contents: "hi" }, { feature: "study_guide" })
     ).rejects.toThrow();
 
     expect(attempted).toEqual([
@@ -87,7 +87,7 @@ describe("generateContentWithFallback", () => {
     const result = await generateContentWithFallback(client, {
       model: "gemini-3.6-flash",
       contents: "hi",
-    }, "study_guide");
+    }, { feature: "study_guide" });
 
     expect(result).toEqual({ text: "ok:gemini-3.7-flash" });
   });
@@ -99,7 +99,7 @@ describe("generateContentWithFallback", () => {
     const client = fakeClient(generateContent);
 
     await expect(
-      generateContentWithFallback(client, { model: "gemini-3.6-flash", contents: "hi" }, "study_guide")
+      generateContentWithFallback(client, { model: "gemini-3.6-flash", contents: "hi" }, { feature: "study_guide" })
     ).rejects.toThrow(/invalid api key/);
     expect(generateContent).toHaveBeenCalledTimes(1);
   });
@@ -116,13 +116,13 @@ describe("generateContentWithFallback", () => {
     const result = await generateContentWithFallback(client, {
       model: "gemini-3.5-flash",
       contents: "hi",
-    }, "study_guide");
+    }, { feature: "study_guide" });
 
     expect(result).toEqual({ text: "ok" });
     expect(attempted).toEqual(["gemini-3.5-flash"]);
   });
 
-  it("records every failed attempt under the calling feature", async () => {
+  it("records every failed attempt under the calling feature and user", async () => {
     const generateContent = vi.fn(async ({ model }: { model: string }) => {
       if (model === "gemini-3.6-flash") throw quotaExhaustedError();
       if (model === "gemini-3.7-flash") throw overloadedError();
@@ -132,12 +132,12 @@ describe("generateContentWithFallback", () => {
     await generateContentWithFallback(
       fakeClient(generateContent),
       { model: "gemini-3.6-flash", contents: "hi" },
-      "flashcards"
+      { feature: "flashcards", userId: "user-1" }
     );
 
-    expect(vi.mocked(recordGeminiError).mock.calls.map(([feature, model]) => [feature, model])).toEqual([
-      ["flashcards", "gemini-3.6-flash"],
-      ["flashcards", "gemini-3.7-flash"],
+    expect(vi.mocked(recordGeminiError).mock.calls.map(([context, model]) => [context, model])).toEqual([
+      [{ feature: "flashcards", userId: "user-1" }, "gemini-3.6-flash"],
+      [{ feature: "flashcards", userId: "user-1" }, "gemini-3.7-flash"],
     ]);
   });
 });

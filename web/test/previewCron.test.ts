@@ -156,7 +156,7 @@ describe.skipIf(!hasDb)("runPreviewCron (requires DATABASE_URL)", () => {
 describe.skipIf(!hasDb)("gemini_errors record (requires DATABASE_URL)", () => {
   it("records a failed attempt with its status, and prunes rows older than 30 days", async () => {
     const tag = `test-${Date.now()}`;
-    await recordGeminiError("quiz", tag, capacityError());
+    await recordGeminiError({ feature: "quiz" }, tag, capacityError());
     const recent = await prisma.gemini_errors.findFirstOrThrow({ where: { model: tag } });
     expect(recent).toMatchObject({ feature: "quiz", status: 429 });
 

@@ -19,6 +19,9 @@ export interface GeneratePreviewInput {
   slidesText: string | null;
   apiKey?: string;
   model?: string;
+  // Who the request is for — stored with any Gemini error so users see
+  // their own failures on the AI usage page.
+  userId?: string | null;
   // The daily cron passes "lecture_preview_cron" so its failures can be told
   // apart from on-demand generation in gemini_errors.
   feature?: Extract<GeminiFeature, "lecture_preview" | "lecture_preview_cron">;
@@ -30,6 +33,7 @@ export async function generatePreview({
   slidesText,
   apiKey = process.env.GEMINI_API_KEY,
   model = process.env.GEMINI_MODEL ?? "gemini-3.6-flash",
+  userId = null,
   feature = "lecture_preview",
 }: GeneratePreviewInput): Promise<string> {
   if (!apiKey) {
@@ -56,7 +60,7 @@ export async function generatePreview({
     model,
     contents: userContent,
     config: { systemInstruction: SYSTEM_PROMPT },
-  }, feature);
+  }, { feature, userId });
 
   if (!response.text) {
     throw new Error("Gemini did not return text for the lecture preview");

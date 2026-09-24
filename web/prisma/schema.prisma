@@ -213,6 +213,7 @@ model User {
   accounts         Account[]
   sessions         Session[]
   gemini_usage     gemini_usage[]
+  gemini_errors    gemini_errors[]
   study_guides     study_guides[]
 
   @@map("users")
@@ -236,18 +237,22 @@ model gemini_usage {
 // One row per failed Gemini request attempt (including each model tried
 // during fallback), so there's a lasting record of which features hit
 // capacity/quota limits and when — Vercel's Hobby-plan runtime logs expire
-// too quickly to answer that after the fact. Not tied to a user: the
-// preview cron has none, and per-user volume is already in gemini_usage.
-// Pruned to the last 30 days by the daily preview cron.
+// too quickly to answer that after the fact. user_id is who the request was
+// for (the lecture's owner for cron-generated previews) so the AI usage page
+// in Settings shows each user only their own errors. Pruned to the last 30
+// days by the daily preview cron.
 model gemini_errors {
   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   created_at DateTime @default(now()) @db.Timestamptz(6)
+  user_id    String?  @db.Uuid
   feature    String
   model      String
   status     Int?
   message    String
+  user       User?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([created_at])
+  @@index([user_id, created_at])
 }
 
 model Account {

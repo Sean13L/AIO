@@ -153,3 +153,22 @@ export interface StudyGuideLectureSelection {
   include_transcript: boolean;
   include_notes: boolean;
 }
+
+// Settings > AI usage (GET /api/ai-usage) — see lib/aiUsage.ts.
+export interface AiUsageError {
+  id: string;
+  created_at: string;
+  feature: string;
+  model: string;
+  status: number | null;
+  message: string;
+}
+
+export interface AiUsageSummary {
+  limit: number;
+  today: { used: number; blocked: number };
+  resets_at: string;
+  history: { date: string; count: number }[];
+  errors: AiUsageError[];
+  error_total: number;
+}

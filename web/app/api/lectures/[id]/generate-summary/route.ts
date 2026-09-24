@@ -35,6 +35,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     generated = await generateTranscriptSummary({
       courseCode: lecture.courses.course_code,
       transcript: lecture.transcript,
+      userId,
     });
   } catch (err) {
     await refundGeminiCall(userId, usage.date);

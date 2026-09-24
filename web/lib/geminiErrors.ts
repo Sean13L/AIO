@@ -11,6 +11,14 @@ export type GeminiFeature =
   | "flashcards"
   | "quiz";
 
+export interface GeminiCallContext {
+  feature: GeminiFeature;
+  // The user the request was made for (for the cron, the lecture's owner),
+  // so each user's AI usage page shows only their own failures. Null only
+  // for calls with no owner.
+  userId?: string | null;
+}
+
 const MAX_MESSAGE_LENGTH = 1000;
 const RETENTION_DAYS = 30;
 
@@ -26,7 +34,7 @@ export function geminiErrorStatus(err: unknown): number | null {
 
 // Best-effort: a failure to log must never mask the Gemini error itself.
 export async function recordGeminiError(
-  feature: GeminiFeature,
+  { feature, userId = null }: GeminiCallContext,
   model: string,
   err: unknown
 ): Promise<void> {
@@ -34,6 +42,7 @@ export async function recordGeminiError(
   try {
     await prisma.gemini_errors.create({
       data: {
+        user_id: userId,
         feature,
         model,
         status: geminiErrorStatus(err),

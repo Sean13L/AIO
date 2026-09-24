@@ -60,7 +60,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const focus = parsed.data.focus !== undefined ? parsed.data.focus || null : existing.focus;
   let generated: Awaited<ReturnType<typeof generateStudyGuide>>;
   try {
-    generated = await generateStudyGuide({ sections, focus, notes: existing.notes });
+    generated = await generateStudyGuide({ sections, focus, notes: existing.notes, userId });
   } catch (err) {
     await refundGeminiCall(userId, usage.date);
     throw err;

@@ -75,7 +75,7 @@ export async function runPreviewCron({
   ]);
   const lectures = await prisma.lectures.findMany({
     where: { ...inWindow, ...hasContent },
-    include: { courses: { select: { course_code: true } } },
+    include: { courses: { select: { course_code: true, user_id: true } } },
     orderBy: { scheduled_at: "asc" },
     take: maxPerRun,
   });
@@ -107,6 +107,7 @@ export async function runPreviewCron({
         topics: lecture.topics,
         slidesText,
         feature: "lecture_preview_cron",
+        userId: lecture.courses.user_id,
       });
 
       await prisma.lectures.update({

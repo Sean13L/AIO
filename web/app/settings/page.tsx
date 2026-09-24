@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { signOut } from "next-auth/react";
 import { useAuthGate } from "@/lib/useAuthGate";
+import { api } from "@/lib/api";
+import type { AiUsageSummary } from "@/lib/types";
 import {
   applyThemePreference,
   getStoredThemePreference,
@@ -35,11 +37,19 @@ export default function SettingsPage() {
   // Same reasoning as theme above: starts at the app's pre-setting default
   // (24h) so the server-rendered markup matches the client's first render.
   const [timeFormat, setTimeFormat] = useState<TimeFormatPreference>("24h");
+  const [aiUsage, setAiUsage] = useState<AiUsageSummary | null>(null);
 
   useEffect(() => {
     setTheme(getStoredThemePreference());
     setTimeFormat(getStoredTimeFormatPreference());
   }, []);
+
+  // Only for the one-line summary on the AI usage card — if it fails, the
+  // card falls back to a generic description rather than showing an error.
+  useEffect(() => {
+    if (!email) return;
+    api.getAiUsage().then(setAiUsage).catch(() => {});
+  }, [email]);
 
   function handleThemeChange(next: ThemePreference) {
     setTheme(next);
@@ -75,6 +85,24 @@ export default function SettingsPage() {
         <button type="button" className="secondary" onClick={() => signOut({ callbackUrl: "/" })}>
           Sign out
         </button>
+      </div>
+
+      <div className="card">
+        <h2>AI usage</h2>
+        <p className="muted" style={{ marginBottom: "1rem" }}>
+          {aiUsage
+            ? `${aiUsage.today.used} of ${aiUsage.limit} AI requests used today${
+                aiUsage.error_total > 0
+                  ? ` · ${aiUsage.error_total} failed ${aiUsage.error_total === 1 ? "request" : "requests"} in the last 30 days`
+                  : ""
+              }.`
+            : "Your daily AI allowance, recent usage, and any failed AI requests."}
+        </p>
+        <Link href="/settings/ai-usage">
+          <button type="button" className="secondary">
+            View AI usage
+          </button>
+        </Link>
       </div>
 
       <div className="card">

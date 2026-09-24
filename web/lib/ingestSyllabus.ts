@@ -34,7 +34,7 @@ export async function ingestSyllabus({
   courseId,
 }: IngestSyllabusParams): Promise<IngestSyllabusResult> {
   const rawText = await extractCombinedRawText(inputs);
-  const { extraction, usedMock } = await extractSyllabus({ syllabusText: rawText });
+  const { extraction, usedMock } = await extractSyllabus({ syllabusText: rawText, userId });
 
   const result = await prisma.$transaction(async (tx) => {
     let course;

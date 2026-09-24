@@ -30,6 +30,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     generated = await generateFlashcards({
       studyGuideTitle: guide.title,
       studyGuideContent: guide.content,
+      userId,
     });
   } catch (err) {
     await refundGeminiCall(userId, usage.date);
