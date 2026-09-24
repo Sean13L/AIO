@@ -85,6 +85,14 @@ model lectures {
   // natural schema beyond "what was said".
   transcript          String?
   transcript_summary  String?
+  // The student's own notes for this session — typed/pasted on the lecture
+  // page, or imported from a file (only the extracted text is kept, the
+  // file itself isn't stored). Selectable as a content type when building a
+  // study guide, alongside topics/slides/transcript.
+  notes               String?
+  // Same meaning as items.source: extracted from a syllabus schedule, or
+  // added by hand on the course page.
+  source              item_source           @default(extracted)
   created_at          DateTime              @default(now()) @db.Timestamptz(6)
   courses             courses               @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   study_guide_sources study_guide_sources[]
@@ -143,6 +151,7 @@ model study_guide_sources {
   included_topics     Boolean      @default(false)
   included_slides     Boolean      @default(false)
   included_transcript Boolean      @default(false)
+  included_notes      Boolean      @default(false)
   study_guides        study_guides @relation(fields: [study_guide_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   lectures            lectures     @relation(fields: [lecture_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 

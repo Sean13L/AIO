@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { use, useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuthGate } from "@/lib/useAuthGate";
 import { api } from "@/lib/api";
 import { formatDue } from "@/lib/dates";
@@ -32,6 +33,71 @@ export default function LecturePage({
   const [summaryUsedMock, setSummaryUsedMock] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const transcriptScrollRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const notesFileInputRef = useRef<HTMLInputElement>(null);
+  const [notesDraft, setNotesDraft] = useState("");
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [importingNotes, setImportingNotes] = useState(false);
+  const [notesSavedAt, setNotesSavedAt] = useState<number | null>(null);
+
+  // Seed the notes editor once per lecture, not on every refresh() — other
+  // actions on this page (uploading slides, generating a preview) refresh
+  // the lecture too, and must not clobber notes the user hasn't saved yet.
+  const loadedLectureId = lecture?.id;
+  useEffect(() => {
+    if (lecture) setNotesDraft(lecture.notes ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadedLectureId]);
+
+  const notesDirty = lecture !== null && notesDraft !== (lecture.notes ?? "");
+
+  async function handleSaveNotes() {
+    if (!email) return;
+    setSavingNotes(true);
+    setError(null);
+    try {
+      const updated = await api.saveLectureNotes(lectureId, notesDraft.trim() ? notesDraft : null);
+      setLecture(updated);
+      setNotesDraft(updated.notes ?? "");
+      setNotesSavedAt(Date.now());
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSavingNotes(false);
+    }
+  }
+
+  async function handleImportNotes(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (!email || files.length === 0) return;
+    setImportingNotes(true);
+    setError(null);
+    try {
+      // The import appends to the *stored* notes server-side, so save any
+      // unsaved typing first or it would be overwritten by the response.
+      if (notesDirty) await api.saveLectureNotes(lectureId, notesDraft.trim() ? notesDraft : null);
+      const updated = await api.importLectureNotes(lectureId, files);
+      setLecture(updated);
+      setNotesDraft(updated.notes ?? "");
+      setNotesSavedAt(Date.now());
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setImportingNotes(false);
+    }
+  }
+
+  async function handleDeleteLecture() {
+    if (!email) return;
+    if (!confirm("Delete this lecture, including its slides, transcript, and notes?")) return;
+    try {
+      await api.deleteLecture(lectureId);
+      router.push(`/courses/${courseId}`);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
 
   async function refresh() {
     if (!email) return;
@@ -152,8 +218,13 @@ export default function LecturePage({
       </p>
 
       <div className="card">
-        <h2>Syllabus topics</h2>
-        <p>{lecture.topics ?? "No topic description extracted for this session."}</p>
+        <h2>{lecture.source === "manual" ? "Topics" : "Syllabus topics"}</h2>
+        <p>
+          {lecture.topics ??
+            (lecture.source === "manual"
+              ? "No topics entered for this session."
+              : "No topic description extracted for this session.")}
+        </p>
       </div>
 
       <div className="card">
@@ -173,6 +244,46 @@ export default function LecturePage({
             {lecture.slides_url ? "Replace slides" : "Upload slides"}
           </button>
         </form>
+      </div>
+
+      <div className="card">
+        <h2>Your notes</h2>
+        <p className="muted" style={{ marginBottom: "0.6rem" }}>
+          Type or paste your own notes for this session, or import them from a file (.pdf, .docx,
+          .txt, .md — the text gets added below). Available as a &quot;Notes&quot; option when
+          building a study guide.
+        </p>
+        <textarea
+          value={notesDraft}
+          onChange={(e) => setNotesDraft(e.target.value)}
+          rows={8}
+          style={{ width: "100%", marginBottom: "0.75rem" }}
+          placeholder="Your notes from this lecture…"
+        />
+        <div className="actions" style={{ alignItems: "center" }}>
+          <button type="button" onClick={handleSaveNotes} disabled={savingNotes || !notesDirty}>
+            {savingNotes ? "Saving…" : "Save notes"}
+          </button>
+          <button
+            type="button"
+            className="secondary"
+            onClick={() => notesFileInputRef.current?.click()}
+            disabled={importingNotes}
+          >
+            {importingNotes ? "Importing…" : "Import from file"}
+          </button>
+          <input
+            ref={notesFileInputRef}
+            type="file"
+            accept=".pdf,.docx,.txt,.md"
+            multiple
+            onChange={handleImportNotes}
+            hidden
+          />
+          <span className="muted" style={{ fontSize: "0.82rem" }}>
+            {notesDirty ? "Unsaved changes" : notesSavedAt ? "Saved" : ""}
+          </span>
+        </div>
       </div>
 
       <div className="card">
@@ -287,6 +398,10 @@ export default function LecturePage({
               : "Generate summary"}
         </button>
       </div>
+
+      <button className="danger" onClick={handleDeleteLecture}>
+        Delete lecture
+      </button>
     </div>
   );
 }

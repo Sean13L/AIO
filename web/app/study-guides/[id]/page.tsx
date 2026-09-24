@@ -10,6 +10,7 @@ import { formatDue } from "@/lib/dates";
 import { useTimeFormatPreference } from "@/lib/timeFormat";
 import { FlashcardViewer } from "@/components/FlashcardViewer";
 import { QuizViewer } from "@/components/QuizViewer";
+import { Markdown } from "@/components/Markdown";
 
 function MockWarning({ children }: { children: React.ReactNode }) {
   return (
@@ -134,7 +135,7 @@ export default function StudyGuideDetailPage({ params }: { params: Promise<{ id:
       )}
 
       <div className="card">
-        <p style={{ whiteSpace: "pre-wrap" }}>{guide.content}</p>
+        <Markdown>{guide.content}</Markdown>
       </div>
 
       {guide.notes && (
@@ -222,6 +223,7 @@ export default function StudyGuideDetailPage({ params }: { params: Promise<{ id:
               source.included_topics && "topics",
               source.included_slides && "slides",
               source.included_transcript && "transcript",
+              source.included_notes && "notes",
             ].filter(Boolean);
             return (
               <li key={source.lecture_id}>

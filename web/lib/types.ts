@@ -71,6 +71,8 @@ export interface Lecture {
   preview_content: string | null;
   transcript: string | null;
   transcript_summary: string | null;
+  notes: string | null;
+  source: "extracted" | "manual";
   created_at: string;
 }
 
@@ -114,6 +116,7 @@ export interface StudyGuideSource {
   included_topics: boolean;
   included_slides: boolean;
   included_transcript: boolean;
+  included_notes: boolean;
 }
 
 export interface Flashcard {
@@ -148,4 +151,5 @@ export interface StudyGuideLectureSelection {
   include_topics: boolean;
   include_slides: boolean;
   include_transcript: boolean;
+  include_notes: boolean;
 }

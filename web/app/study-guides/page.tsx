@@ -62,7 +62,7 @@ export default function StudyGuidesPage() {
         <div>
           <h1>Study Guides</h1>
           <p className="muted">
-            Pick specific lectures — and which of their topics, slides, or transcript to draw
+            Pick specific lectures — and which of their topics, slides, transcript, or notes to draw
             from — and generate a combined study guide from them.
           </p>
         </div>

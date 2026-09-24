@@ -63,6 +63,35 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<ItemFormState>(emptyForm);
 
+  const [lectureDate, setLectureDate] = useState("");
+  const [lectureTime, setLectureTime] = useState("");
+  const [lectureWeek, setLectureWeek] = useState("");
+  const [lectureTopics, setLectureTopics] = useState("");
+  const [addingLecture, setAddingLecture] = useState(false);
+
+  async function handleAddLecture(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email || !lectureDate || !lectureTime) return;
+    setAddingLecture(true);
+    try {
+      await api.createLecture(courseId, {
+        scheduled_date: lectureDate,
+        scheduled_time: lectureTime,
+        week_number: lectureWeek.trim() ? Number(lectureWeek) : null,
+        topics: lectureTopics.trim() || null,
+      });
+      // Time and week are left as-is — adding several sessions in a row
+      // usually shares a class slot — only the per-session fields clear.
+      setLectureDate("");
+      setLectureTopics("");
+      await refresh();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setAddingLecture(false);
+    }
+  }
+
   async function refresh() {
     if (!email) return;
     try {
@@ -418,6 +447,57 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
       )}
 
       <h2 style={{ marginTop: "2rem" }}>Lecture schedule</h2>
+
+      <div className="card">
+        <h2>Add a lecture</h2>
+        <p className="muted" style={{ marginBottom: "0.4rem" }}>
+          For sessions the syllabus didn&apos;t list — a makeup class, a tutorial, a guest lecture.
+        </p>
+        <form className="inline" onSubmit={handleAddLecture}>
+          <label>
+            Date
+            <input
+              type="date"
+              value={lectureDate}
+              onChange={(e) => setLectureDate(e.target.value)}
+              required
+            />
+          </label>
+          <label>
+            Time
+            <input
+              type="time"
+              value={lectureTime}
+              onChange={(e) => setLectureTime(e.target.value)}
+              required
+            />
+          </label>
+          <label>
+            Week
+            <input
+              type="number"
+              min={0}
+              max={99}
+              value={lectureWeek}
+              onChange={(e) => setLectureWeek(e.target.value)}
+              placeholder="—"
+              style={{ width: "5rem" }}
+            />
+          </label>
+          <label style={{ flex: 1, minWidth: "12rem" }}>
+            Topics
+            <input
+              value={lectureTopics}
+              onChange={(e) => setLectureTopics(e.target.value)}
+              placeholder="Review session: recursion and induction"
+            />
+          </label>
+          <button type="submit" disabled={addingLecture}>
+            {addingLecture ? "Adding…" : "Add lecture"}
+          </button>
+        </form>
+      </div>
+
       {lectures === null ? (
         <p className="muted">Loading…</p>
       ) : lectures.length === 0 ? (
@@ -427,7 +507,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
           </span>
           <h3>No lectures yet</h3>
           <p>
-            These come from the syllabus&apos;s week-by-week schedule once you{" "}
+            Add one above, or let the syllabus&apos;s week-by-week schedule fill these in —{" "}
             <Link href={`/upload?course_id=${courseId}`}>upload one</Link>.
           </p>
         </div>
@@ -448,7 +528,19 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
               <tr key={lecture.id}>
                 <td>{lecture.week_number ?? "—"}</td>
                 <td>{formatDue({ due_at: lecture.scheduled_at, is_datetime: true }, timeFormat)}</td>
-                <td>{lecture.topics ?? "—"}</td>
+                <td>
+                  {lecture.topics ?? "—"}
+                  {lecture.source === "manual" && (
+                    <span className="tag tag-slate" style={{ marginLeft: "0.4rem" }}>
+                      added by you
+                    </span>
+                  )}
+                  {lecture.notes && (
+                    <span className="tag tag-amber" style={{ marginLeft: "0.4rem" }}>
+                      notes
+                    </span>
+                  )}
+                </td>
                 <td>
                   <span className={`tag ${PREVIEW_STATUS_TAG[lecture.preview_status]}`}>
                     {PREVIEW_STATUS_LABELS[lecture.preview_status]}

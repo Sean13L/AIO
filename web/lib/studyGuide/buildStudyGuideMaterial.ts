@@ -10,6 +10,7 @@ export interface StudyGuideMaterialSection {
   includedTopics: boolean;
   includedSlides: boolean;
   includedTranscript: boolean;
+  includedNotes: boolean;
 }
 
 export interface StudyGuideMaterial {
@@ -53,6 +54,7 @@ export async function buildStudyGuideMaterial(
     let includedTopics = false;
     let includedSlides = false;
     let includedTranscript = false;
+    let includedNotes = false;
 
     if (selection.include_topics && lecture.topics) {
       parts.push(`Syllabus topics: ${lecture.topics}`);
@@ -82,6 +84,14 @@ export async function buildStudyGuideMaterial(
       }
     }
 
+    // The student's own notes for this specific lecture — kept inside this
+    // lecture's section (not the guide-wide notes section) so the model
+    // knows which session they belong to.
+    if (selection.include_notes && lecture.notes?.trim()) {
+      parts.push(`Student's own notes for this lecture:\n${lecture.notes.trim()}`);
+      includedNotes = true;
+    }
+
     if (parts.length === 0) continue;
 
     const label = `${lecture.courses.course_code}${lecture.week_number ? ` — Week ${lecture.week_number}` : ""} (${lecture.scheduled_at.toISOString().slice(0, 10)})`;
@@ -92,6 +102,7 @@ export async function buildStudyGuideMaterial(
       includedTopics,
       includedSlides,
       includedTranscript,
+      includedNotes,
     });
   }
 

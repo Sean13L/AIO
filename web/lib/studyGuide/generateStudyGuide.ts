@@ -17,10 +17,12 @@ Organize the guide by the lecture sections given (keep their headers), and for e
 - If the same concept recurs across sections, don't repeat the full explanation — note briefly
   where else it's covered and expand it only once.
 
-If the student's own notes are included, treat them as trustworthy supplementary material — weave
-in anything from them that adds context, examples, or emphasis the lecture material alone doesn't
-cover, under whichever existing section it's most relevant to (or its own short section if it
-doesn't fit any lecture). The lecture/syllabus material should still anchor the guide; notes add to
+The student's own notes can appear in two places: inside a lecture's section (notes they attached
+to that specific session) and/or as a separate "Student's own notes" section. Treat both as
+trustworthy supplementary material — weave in anything from them that adds context, examples, or
+emphasis the lecture material alone doesn't cover. Notes inside a lecture's section belong to that
+lecture; for the separate section, place each point under whichever lecture it's most relevant to
+(or its own short section if it doesn't fit any lecture). The lecture/syllabus material should still anchor the guide; notes add to
 it, they don't override what the instructor's own material says.
 
 If the student gave a focus, prioritize material relevant to it, but don't omit other clearly

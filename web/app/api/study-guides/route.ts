@@ -123,6 +123,7 @@ export async function POST(req: NextRequest) {
           included_topics: section.includedTopics,
           included_slides: section.includedSlides,
           included_transcript: section.includedTranscript,
+          included_notes: section.includedNotes,
         })),
       },
     },

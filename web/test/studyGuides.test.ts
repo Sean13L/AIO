@@ -178,6 +178,55 @@ describe.skipIf(!hasDb)("Study guides API routes (requires DATABASE_URL)", () =>
     await prisma.study_guides.deleteMany({ where: { id: body.id } });
   });
 
+  it("includes a lecture's own notes only when include_notes is selected", async () => {
+    const notesOnlyLecture = await prisma.lectures.create({
+      data: {
+        course_id: courseId,
+        scheduled_at: new Date("2026-09-17T14:00:00Z"),
+        week_number: 2,
+        notes: "Heapsort is in-place but not stable.",
+        source: "manual",
+      },
+    });
+    const { POST } = await import("@/app/api/study-guides/route");
+
+    const excluded = await POST(
+      studyGuideFormRequest({
+        lectures: [
+          {
+            lecture_id: notesOnlyLecture.id,
+            include_topics: true,
+            include_slides: true,
+            include_transcript: true,
+            include_notes: false,
+          },
+        ],
+      })
+    );
+    expect(excluded.status).toBe(400);
+
+    const included = await POST(
+      studyGuideFormRequest({
+        lectures: [
+          {
+            lecture_id: notesOnlyLecture.id,
+            include_topics: false,
+            include_slides: false,
+            include_transcript: false,
+            include_notes: true,
+          },
+        ],
+      })
+    );
+    expect(included.status).toBe(201);
+    const body = await included.json();
+    expect(body.content).toContain("Heapsort is in-place but not stable.");
+    expect(body.sources[0]).toMatchObject({ included_notes: true, included_topics: false });
+
+    await prisma.study_guides.deleteMany({ where: { id: body.id } });
+    await prisma.lectures.delete({ where: { id: notesOnlyLecture.id } });
+  }, 20000);
+
   it("400s on a disallowed note file type", async () => {
     const { POST } = await import("@/app/api/study-guides/route");
     const formData = new FormData();

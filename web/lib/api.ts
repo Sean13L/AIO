@@ -113,6 +113,43 @@ export const api = {
       body: JSON.stringify({ transcript }),
     }),
 
+  createLecture: (
+    courseId: string,
+    input: {
+      scheduled_date: string;
+      scheduled_time: string;
+      week_number?: number | null;
+      topics?: string | null;
+      notes?: string | null;
+    }
+  ) =>
+    request<Lecture>(`/api/courses/${courseId}/lectures`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+
+  saveLectureNotes: (lectureId: string, notes: string | null) =>
+    request<Lecture>(`/api/lectures/${lectureId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ notes }),
+    }),
+
+  // Multipart, so it bypasses request()'s JSON Content-Type — same as
+  // uploadLectureSlides.
+  importLectureNotes: async (lectureId: string, files: File[]): Promise<Lecture> => {
+    const formData = new FormData();
+    for (const file of files) formData.append("file", file);
+    const res = await fetch(`/api/lectures/${lectureId}/notes`, { method: "POST", body: formData });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(typeof body.error === "string" ? body.error : "Notes import failed");
+    }
+    return res.json();
+  },
+
+  deleteLecture: (lectureId: string) =>
+    request<void>(`/api/lectures/${lectureId}`, { method: "DELETE" }),
+
   generateLectureSummary: (lectureId: string) =>
     request<Lecture & { usedMock: boolean }>(`/api/lectures/${lectureId}/generate-summary`, {
       method: "POST",

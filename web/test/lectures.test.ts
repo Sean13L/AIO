@@ -291,4 +291,98 @@ describe.skipIf(!hasDb)("Lectures API routes (requires DATABASE_URL)", () => {
     await prisma.courses.delete({ where: { id: course1.id } });
     await prisma.courses.delete({ where: { id: course2.id } });
   });
+
+  it("adds a lecture by hand, edits its notes, imports notes from a file, and deletes it", async () => {
+    const course = await prisma.courses.create({
+      data: { user_id: mockSession.userId, course_code: "MAN101", course_name: "Manual Lectures" },
+    });
+    const { POST: createLecture } = await import("@/app/api/courses/[id]/lectures/route");
+    const { GET, PATCH, DELETE } = await import("@/app/api/lectures/[id]/route");
+    const { POST: importNotes } = await import("@/app/api/lectures/[id]/notes/route");
+    const jsonReq = (method: string, body: unknown) =>
+      new NextRequest("http://localhost/x", { method, body: JSON.stringify(body) });
+
+    // Lectures are always timed, so a missing time is rejected.
+    const noTime = await createLecture(jsonReq("POST", { scheduled_date: "2026-10-05" }), {
+      params: Promise.resolve({ id: course.id }),
+    });
+    expect(noTime.status).toBe(400);
+
+    const created = await createLecture(
+      jsonReq("POST", {
+        scheduled_date: "2026-10-05",
+        scheduled_time: "14:30",
+        week_number: 5,
+        topics: "Makeup session: graph traversal",
+      }),
+      { params: Promise.resolve({ id: course.id }) }
+    );
+    expect(created.status).toBe(201);
+    const lecture = await created.json();
+    expect(lecture.source).toBe("manual");
+    expect(lecture.scheduled_at).toBe("2026-10-05T14:30:00.000Z");
+    expect(lecture.week_number).toBe(5);
+
+    // Editing notes must NOT wipe an existing transcript summary — only
+    // transcript edits invalidate it.
+    await prisma.lectures.update({
+      where: { id: lecture.id },
+      data: { transcript: "t", transcript_summary: "existing summary" },
+    });
+    const notesRes = await PATCH(jsonReq("PATCH", { notes: "BFS uses a queue." }), {
+      params: Promise.resolve({ id: lecture.id }),
+    });
+    expect(notesRes.status).toBe(200);
+    const withNotes = await notesRes.json();
+    expect(withNotes.notes).toBe("BFS uses a queue.");
+    expect(withNotes.transcript_summary).toBe("existing summary");
+
+    const empty = await PATCH(jsonReq("PATCH", {}), { params: Promise.resolve({ id: lecture.id }) });
+    expect(empty.status).toBe(400);
+
+    // Import appends (with a header naming the file) rather than replacing.
+    const form = new FormData();
+    form.append("file", new File(["DFS uses a stack."], "dfs.txt", { type: "text/plain" }));
+    const imported = await importNotes(
+      new NextRequest("http://localhost/x", { method: "POST", body: form }),
+      { params: Promise.resolve({ id: lecture.id }) }
+    );
+    expect(imported.status).toBe(200);
+    const afterImport = await imported.json();
+    expect(afterImport.notes).toContain("BFS uses a queue.");
+    expect(afterImport.notes).toContain("--- Imported from dfs.txt ---");
+    expect(afterImport.notes).toContain("DFS uses a stack.");
+
+    const badForm = new FormData();
+    badForm.append("file", new File(["<script>"], "notes.html", { type: "text/html" }));
+    const badImport = await importNotes(
+      new NextRequest("http://localhost/x", { method: "POST", body: badForm }),
+      { params: Promise.resolve({ id: lecture.id }) }
+    );
+    expect(badImport.status).toBe(400);
+
+    // Another user can't delete it.
+    const other = await prisma.user.create({
+      data: { email: `lecture-test-manual-other-${Date.now()}@example.com` },
+    });
+    const originalUserId = mockSession.userId;
+    mockSession.userId = other.id;
+    const theirDelete = await DELETE(new NextRequest("http://localhost/x"), {
+      params: Promise.resolve({ id: lecture.id }),
+    });
+    expect(theirDelete.status).toBe(404);
+    mockSession.userId = originalUserId;
+
+    const deleted = await DELETE(new NextRequest("http://localhost/x"), {
+      params: Promise.resolve({ id: lecture.id }),
+    });
+    expect(deleted.status).toBe(204);
+    const gone = await GET(new NextRequest("http://localhost/x"), {
+      params: Promise.resolve({ id: lecture.id }),
+    });
+    expect(gone.status).toBe(404);
+
+    await prisma.user.delete({ where: { id: other.id } });
+    await prisma.courses.delete({ where: { id: course.id } });
+  }, 20000);
 });

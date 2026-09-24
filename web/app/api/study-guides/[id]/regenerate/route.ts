@@ -34,6 +34,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     include_topics: source.included_topics,
     include_slides: source.included_slides,
     include_transcript: source.included_transcript,
+    include_notes: source.included_notes,
   }));
 
   const { sections } = await buildStudyGuideMaterial(userId, selections);

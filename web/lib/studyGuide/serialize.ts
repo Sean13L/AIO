@@ -56,6 +56,7 @@ export function serializeStudyGuide(guide: StudyGuideWithSources) {
       included_topics: source.included_topics,
       included_slides: source.included_slides,
       included_transcript: source.included_transcript,
+      included_notes: source.included_notes,
     })),
   };
 }

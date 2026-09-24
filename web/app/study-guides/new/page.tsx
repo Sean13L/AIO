@@ -13,10 +13,17 @@ interface ContentSelection {
   include_topics: boolean;
   include_slides: boolean;
   include_transcript: boolean;
+  include_notes: boolean;
 }
 
 function hasSelectableContent(lecture: LectureWithCourse): boolean {
-  return Boolean(lecture.topics || lecture.slides_url || lecture.transcript || lecture.transcript_summary);
+  return Boolean(
+    lecture.topics ||
+      lecture.slides_url ||
+      lecture.transcript ||
+      lecture.transcript_summary ||
+      lecture.notes
+  );
 }
 
 function defaultSelectionFor(lecture: LectureWithCourse): ContentSelection {
@@ -25,6 +32,7 @@ function defaultSelectionFor(lecture: LectureWithCourse): ContentSelection {
     include_topics: Boolean(lecture.topics),
     include_slides: Boolean(lecture.slides_url),
     include_transcript: Boolean(lecture.transcript || lecture.transcript_summary),
+    include_notes: Boolean(lecture.notes),
   };
 }
 
@@ -155,7 +163,7 @@ export default function NewStudyGuidePage() {
       </p>
       <h1>New study guide</h1>
       <p className="muted">
-        Select the lectures — and which of their topics, slides, or transcript — to combine into
+        Select the lectures — and which of their topics, slides, transcript, or notes — to combine into
         one study guide. Add your own notes below to supplement them, or build a guide from notes
         alone.
       </p>
@@ -183,9 +191,9 @@ export default function NewStudyGuidePage() {
               </span>
               <h3>No lectures yet</h3>
               <p>
-                Lectures come from a course&apos;s syllabus schedule —{" "}
-                <Link href="/upload">upload one</Link>, or build a guide from your own notes below
-                instead.
+                Lectures come from a course&apos;s syllabus schedule (
+                <Link href="/upload">upload one</Link>) or can be added by hand on a course&apos;s
+                page — or build a guide from your own notes below instead.
               </p>
             </div>
           )}
@@ -224,7 +232,8 @@ export default function NewStudyGuidePage() {
                   const hasTopics = Boolean(lecture.topics);
                   const hasSlides = Boolean(lecture.slides_url);
                   const hasTranscript = Boolean(lecture.transcript || lecture.transcript_summary);
-                  const hasAnyContent = hasTopics || hasSlides || hasTranscript;
+                  const hasNotes = Boolean(lecture.notes);
+                  const hasAnyContent = hasTopics || hasSlides || hasTranscript || hasNotes;
                   return (
                     <li key={lecture.id} className="lecture-picker-row">
                       <label className="lecture-picker-checkbox">
@@ -241,7 +250,7 @@ export default function NewStudyGuidePage() {
                             <span className="muted"> — {lecture.topics.slice(0, 80)}</span>
                           )}
                           {!hasAnyContent && (
-                            <span className="muted"> (no topics, slides, or transcript yet)</span>
+                            <span className="muted"> (no topics, slides, transcript, or notes yet)</span>
                           )}
                         </span>
                       </label>
@@ -273,6 +282,15 @@ export default function NewStudyGuidePage() {
                               onChange={() => toggleContent(lecture.id, "include_transcript")}
                             />{" "}
                             Transcript
+                          </label>
+                          <label className={hasNotes ? undefined : "disabled"}>
+                            <input
+                              type="checkbox"
+                              checked={selection.include_notes}
+                              disabled={!hasNotes}
+                              onChange={() => toggleContent(lecture.id, "include_notes")}
+                            />{" "}
+                            Notes
                           </label>
                         </div>
                       )}

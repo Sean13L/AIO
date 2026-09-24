@@ -19,6 +19,32 @@ export const itemCreateSchema = z.object({
   notes: z.string().nullable().optional(),
 });
 
+// Lectures always have a real time slot (never all-day) — see the Calendar
+// section of CLAUDE.md — so scheduled_time is required, unlike items.
+export const lectureCreateSchema = z.object({
+  scheduled_date: dateOnly,
+  scheduled_time: timeOnly,
+  week_number: z.number().int().min(0).max(99).nullable().optional(),
+  topics: z.string().trim().max(2000).nullable().optional(),
+  notes: z.string().max(200_000).nullable().optional(),
+});
+
+export const lectureUpdateSchema = z
+  .object({
+    transcript: z.string().nullable().optional(),
+    notes: z.string().max(200_000).nullable().optional(),
+    topics: z.string().trim().max(2000).nullable().optional(),
+    week_number: z.number().int().min(0).max(99).nullable().optional(),
+    scheduled_date: dateOnly.optional(),
+    scheduled_time: timeOnly.optional(),
+  })
+  .refine((body) => (body.scheduled_date === undefined) === (body.scheduled_time === undefined), {
+    message: "scheduled_date and scheduled_time must be provided together",
+  })
+  .refine((body) => Object.values(body).some((v) => v !== undefined), {
+    message: "Provide at least one field to update",
+  });
+
 export const itemUpdateSchema = z
   .object({
     name: z.string().min(1).optional(),
@@ -76,6 +102,7 @@ export const studyGuideLectureSelectionSchema = z.object({
   include_topics: z.boolean().optional().default(true),
   include_slides: z.boolean().optional().default(true),
   include_transcript: z.boolean().optional().default(true),
+  include_notes: z.boolean().optional().default(true),
 });
 
 export const studyGuideCreateSchema = z.object({
