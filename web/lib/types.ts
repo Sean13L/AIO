@@ -63,7 +63,10 @@ export type PreviewStatus = "not_generated" | "generated" | "viewed";
 export interface Lecture {
   id: string;
   course_id: string;
-  scheduled_at: string;
+  // Null until the student dates it (manual lectures can start undated).
+  scheduled_at: string | null;
+  // false = a date with no time, shown as all-day.
+  is_datetime: boolean;
   week_number: number | null;
   topics: string | null;
   slides_url: string | null;
@@ -112,7 +115,8 @@ export interface StudyGuideSource {
   course_code: string;
   course_name: string;
   week_number: number | null;
-  scheduled_at: string;
+  scheduled_at: string | null;
+  is_datetime: boolean;
   included_topics: boolean;
   included_slides: boolean;
   included_transcript: boolean;

@@ -221,8 +221,9 @@ export async function syncUserCalendarToGoogle(userId: string): Promise<void> {
       where: { courses: { user_id: userId } },
       include: { courses: { select: { course_code: true } } },
     }),
+    // Undated lectures have nowhere to go on a calendar.
     prisma.lectures.findMany({
-      where: { courses: { user_id: userId } },
+      where: { courses: { user_id: userId }, scheduled_at: { not: null } },
       include: { courses: { select: { course_code: true } } },
     }),
     // Only todos the user has opted into showing on their calendar — see
@@ -253,8 +254,8 @@ export async function syncUserCalendarToGoogle(userId: string): Promise<void> {
       }`,
       description: lecture.topics,
       url: `${webBaseUrl}/courses/${lecture.course_id}/lectures/${lecture.id}`,
-      start: lecture.scheduled_at,
-      allDay: false,
+      start: lecture.scheduled_at!,
+      allDay: !lecture.is_datetime,
       durationMinutes: LECTURE_DURATION_MINUTES,
     })),
     ...todos.map((todo) => ({

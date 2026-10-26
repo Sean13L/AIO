@@ -1214,6 +1214,19 @@ form.inline label {
   padding: 0.2em 0;
 }
 
+/* Lecture page: the schedule line with its "Edit details" button beside it. */
+.lecture-when {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.lecture-when p {
+  margin: 0;
+}
+
 /* ---------- AI usage (Settings > AI usage) ---------- */
 
 .usage-figure {

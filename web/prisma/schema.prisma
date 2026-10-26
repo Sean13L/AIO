@@ -73,7 +73,14 @@ model items {
 model lectures {
   id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   course_id           String                @db.Uuid
-  scheduled_at        DateTime              @db.Timestamptz(6)
+  // Null until the student schedules it — manually added lectures can be
+  // created with no date and filled in later. Unscheduled lectures stay off
+  // every calendar (in-app, .ics, Google) and out of the preview cron.
+  scheduled_at        DateTime?             @db.Timestamptz(6)
+  // Same all-day-vs-timed convention as items.is_datetime: false when only
+  // a date was given (an all-day event). Syllabus-extracted lectures always
+  // carry a class time, hence the default.
+  is_datetime         Boolean               @default(true)
   week_number         Int?
   topics              String?
   slides_url          String?

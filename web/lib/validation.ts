@@ -21,13 +21,24 @@ export const itemCreateSchema = z.object({
 
 // Lectures always have a real time slot (never all-day) — see the Calendar
 // section of CLAUDE.md — so scheduled_time is required, unlike items.
-export const lectureCreateSchema = z.object({
-  scheduled_date: dateOnly,
-  scheduled_time: timeOnly,
-  week_number: z.number().int().min(0).max(99).nullable().optional(),
-  topics: z.string().trim().max(2000).nullable().optional(),
-  notes: z.string().max(200_000).nullable().optional(),
-});
+// Every field is optional so students can add a lecture now and fill in its
+// details later. A time only makes sense on a date; a date alone makes it an
+// all-day lecture.
+const timeNeedsDate = {
+  check: (body: { scheduled_date?: string | null; scheduled_time?: string | null }) =>
+    !body.scheduled_time || Boolean(body.scheduled_date),
+  message: "A time needs a date",
+};
+
+export const lectureCreateSchema = z
+  .object({
+    scheduled_date: dateOnly.nullable().optional(),
+    scheduled_time: timeOnly.nullable().optional(),
+    week_number: z.number().int().min(0).max(99).nullable().optional(),
+    topics: z.string().trim().max(2000).nullable().optional(),
+    notes: z.string().max(200_000).nullable().optional(),
+  })
+  .refine(timeNeedsDate.check, { message: timeNeedsDate.message });
 
 export const lectureUpdateSchema = z
   .object({
@@ -35,11 +46,14 @@ export const lectureUpdateSchema = z
     notes: z.string().max(200_000).nullable().optional(),
     topics: z.string().trim().max(2000).nullable().optional(),
     week_number: z.number().int().min(0).max(99).nullable().optional(),
-    scheduled_date: dateOnly.optional(),
-    scheduled_time: timeOnly.optional(),
+    // Sending scheduled_date (null clears it) replaces the whole schedule,
+    // with scheduled_time optional alongside it.
+    scheduled_date: dateOnly.nullable().optional(),
+    scheduled_time: timeOnly.nullable().optional(),
   })
-  .refine((body) => (body.scheduled_date === undefined) === (body.scheduled_time === undefined), {
-    message: "scheduled_date and scheduled_time must be provided together",
+  .refine(timeNeedsDate.check, { message: timeNeedsDate.message })
+  .refine((body) => body.scheduled_time === undefined || body.scheduled_date !== undefined, {
+    message: "Send scheduled_date along with scheduled_time",
   })
   .refine((body) => Object.values(body).some((v) => v !== undefined), {
     message: "Provide at least one field to update",

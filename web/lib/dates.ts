@@ -27,6 +27,16 @@ export function formatDue(
   return when.is_datetime ? `${due_date} at ${formatTime(due_time, timeFormat)}` : `${due_date} (all day)`;
 }
 
+// A lecture's schedule for display — lectures can be added before they're
+// dated, and dated without a time (all-day).
+export function formatLectureWhen(
+  lecture: { scheduled_at: string | null; is_datetime: boolean },
+  timeFormat: TimeFormatPreference
+): string {
+  if (!lecture.scheduled_at) return "Not scheduled yet";
+  return formatDue({ due_at: lecture.scheduled_at, is_datetime: lecture.is_datetime }, timeFormat);
+}
+
 const MONTH_LABELS = [
   "January",
   "February",

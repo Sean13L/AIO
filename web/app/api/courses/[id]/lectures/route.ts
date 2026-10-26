@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/session";
 import { lectureCreateSchema } from "@/lib/validation";
-import { toTimestamp } from "@/lib/timestamp";
+import { lectureSchedule } from "@/lib/timestamp";
 import { syncUserCalendarToGoogle } from "@/lib/calendar/googleCalendar";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -22,6 +22,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
 // Manually-added lecture — for sessions the syllabus schedule didn't list
 // (a makeup class, a tutorial) or courses whose syllabus had no schedule.
+// Nothing is required: a lecture can be added now and dated later.
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const lecture = await prisma.lectures.create({
     data: {
       course_id: courseId,
-      scheduled_at: toTimestamp(parsed.data.scheduled_date, parsed.data.scheduled_time),
+      ...lectureSchedule(parsed.data.scheduled_date, parsed.data.scheduled_time),
       week_number: parsed.data.week_number ?? null,
       topics: parsed.data.topics?.trim() || null,
       notes: parsed.data.notes?.trim() ? parsed.data.notes : null,

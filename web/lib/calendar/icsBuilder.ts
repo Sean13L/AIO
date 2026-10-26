@@ -17,7 +17,9 @@ interface ItemForFeed {
 interface LectureForFeed {
   id: string;
   course_id: string;
-  scheduled_at: Date;
+  // Null for a lecture the student hasn't dated yet — left out of the feed.
+  scheduled_at: Date | null;
+  is_datetime: boolean;
   week_number: number | null;
   topics: string | null;
   course_code: string;
@@ -154,12 +156,13 @@ export function buildIcsFeed({ items, lectures, todos = [], webBaseUrl }: BuildI
   }
 
   for (const lecture of lectures) {
+    if (!lecture.scheduled_at) continue;
     lines.push(
       ...buildEvent({
         uid: `lecture-${lecture.id}@ai-syllabus-assistant`,
         dtstamp: now,
         start: new Date(lecture.scheduled_at),
-        allDay: false,
+        allDay: !lecture.is_datetime,
         durationMinutes: LECTURE_DURATION_MINUTES,
         summary: `${lecture.course_code}: Lecture${
           lecture.week_number ? ` (Week ${lecture.week_number})` : ""

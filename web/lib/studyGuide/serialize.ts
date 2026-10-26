@@ -53,6 +53,7 @@ export function serializeStudyGuide(guide: StudyGuideWithSources) {
       course_name: source.lectures.courses.course_name,
       week_number: source.lectures.week_number,
       scheduled_at: source.lectures.scheduled_at,
+      is_datetime: source.lectures.is_datetime,
       included_topics: source.included_topics,
       included_slides: source.included_slides,
       included_transcript: source.included_transcript,

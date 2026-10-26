@@ -13,7 +13,7 @@ import {
   type ItemType,
   type Lecture,
 } from "@/lib/types";
-import { formatDue, splitDueAt } from "@/lib/dates";
+import { formatDue, formatLectureWhen, splitDueAt } from "@/lib/dates";
 import { useTimeFormatPreference } from "@/lib/timeFormat";
 import {
   courseAccentKey,
@@ -71,12 +71,14 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
 
   async function handleAddLecture(e: React.FormEvent) {
     e.preventDefault();
-    if (!email || !lectureDate || !lectureTime) return;
+    if (!email) return;
     setAddingLecture(true);
     try {
+      // Every field is optional — a lecture can be added now and dated
+      // later from its own page. A time only counts alongside a date.
       await api.createLecture(courseId, {
-        scheduled_date: lectureDate,
-        scheduled_time: lectureTime,
+        scheduled_date: lectureDate || null,
+        scheduled_time: lectureDate && lectureTime ? lectureTime : null,
         week_number: lectureWeek.trim() ? Number(lectureWeek) : null,
         topics: lectureTopics.trim() || null,
       });
@@ -452,6 +454,8 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
         <h2>Add a lecture</h2>
         <p className="muted" style={{ marginBottom: "0.4rem" }}>
           For sessions the syllabus didn&apos;t list — a makeup class, a tutorial, a guest lecture.
+          Every field is optional: leave the date blank to schedule it later from the lecture&apos;s
+          page, or the time blank for an all-day entry.
         </p>
         <form className="inline" onSubmit={handleAddLecture}>
           <label>
@@ -460,7 +464,6 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
               type="date"
               value={lectureDate}
               onChange={(e) => setLectureDate(e.target.value)}
-              required
             />
           </label>
           <label>
@@ -469,7 +472,8 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
               type="time"
               value={lectureTime}
               onChange={(e) => setLectureTime(e.target.value)}
-              required
+              disabled={!lectureDate}
+              title={lectureDate ? undefined : "Pick a date first"}
             />
           </label>
           <label>
@@ -527,7 +531,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
             {lectures.map((lecture) => (
               <tr key={lecture.id}>
                 <td>{lecture.week_number ?? "—"}</td>
-                <td>{formatDue({ due_at: lecture.scheduled_at, is_datetime: true }, timeFormat)}</td>
+                <td>{formatLectureWhen(lecture, timeFormat)}</td>
                 <td>
                   {lecture.topics ?? "—"}
                   {lecture.source === "manual" && (

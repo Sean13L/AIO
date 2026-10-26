@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuthGate } from "@/lib/useAuthGate";
 import { api } from "@/lib/api";
 import type { LectureWithCourse } from "@/lib/types";
-import { formatDue } from "@/lib/dates";
+import { formatLectureWhen } from "@/lib/dates";
 import { useTimeFormatPreference } from "@/lib/timeFormat";
 
 interface ContentSelection {
@@ -245,7 +245,7 @@ export default function NewStudyGuidePage() {
                         />
                         <span>
                           {lecture.week_number ? `Week ${lecture.week_number} — ` : ""}
-                          {formatDue({ due_at: lecture.scheduled_at, is_datetime: true }, timeFormat)}
+                          {formatLectureWhen(lecture, timeFormat)}
                           {lecture.topics && (
                             <span className="muted"> — {lecture.topics.slice(0, 80)}</span>
                           )}

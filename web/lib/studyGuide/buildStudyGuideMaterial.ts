@@ -94,7 +94,7 @@ export async function buildStudyGuideMaterial(
 
     if (parts.length === 0) continue;
 
-    const label = `${lecture.courses.course_code}${lecture.week_number ? ` — Week ${lecture.week_number}` : ""} (${lecture.scheduled_at.toISOString().slice(0, 10)})`;
+    const label = `${lecture.courses.course_code}${lecture.week_number ? ` — Week ${lecture.week_number}` : ""} (${lecture.scheduled_at ? lecture.scheduled_at.toISOString().slice(0, 10) : "not scheduled"})`;
     sections.push({
       lectureId: lecture.id,
       label,

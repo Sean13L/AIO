@@ -5,7 +5,7 @@ import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthGate } from "@/lib/useAuthGate";
 import { api } from "@/lib/api";
-import { formatDue } from "@/lib/dates";
+import { formatLectureWhen, splitDueAt } from "@/lib/dates";
 import type { Lecture } from "@/lib/types";
 import { PREVIEW_STATUS_TAG } from "@/lib/uiColors";
 import { useLectureTranscription } from "@/lib/useLectureTranscription";
@@ -86,6 +86,47 @@ export default function LecturePage({
       setError((err as Error).message);
     } finally {
       setImportingNotes(false);
+    }
+  }
+
+  // "Edit details": everything the "Add a lecture" form asks for, editable
+  // later — manual lectures can be created with every field blank.
+  const [editingDetails, setEditingDetails] = useState(false);
+  const [savingDetails, setSavingDetails] = useState(false);
+  const [detailsDraft, setDetailsDraft] = useState({ date: "", time: "", week: "", topics: "" });
+
+  function openDetailsEditor() {
+    if (!lecture) return;
+    const { due_date, due_time } = lecture.scheduled_at
+      ? splitDueAt(lecture.scheduled_at, lecture.is_datetime)
+      : { due_date: "", due_time: "" };
+    setDetailsDraft({
+      date: due_date,
+      time: due_time,
+      week: lecture.week_number?.toString() ?? "",
+      topics: lecture.topics ?? "",
+    });
+    setEditingDetails(true);
+  }
+
+  async function handleSaveDetails(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email) return;
+    setSavingDetails(true);
+    setError(null);
+    try {
+      const updated = await api.updateLectureDetails(lectureId, {
+        scheduled_date: detailsDraft.date || null,
+        scheduled_time: detailsDraft.date && detailsDraft.time ? detailsDraft.time : null,
+        week_number: detailsDraft.week.trim() ? Number(detailsDraft.week) : null,
+        topics: detailsDraft.topics.trim() || null,
+      });
+      setLecture(updated);
+      setEditingDetails(false);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSavingDetails(false);
     }
   }
 
@@ -214,16 +255,82 @@ export default function LecturePage({
           {PREVIEW_STATUS_LABELS[lecture.preview_status]}
         </span>
       </h1>
-      <p className="muted">
-        {formatDue({ due_at: lecture.scheduled_at, is_datetime: true }, timeFormat)}
-      </p>
+      <div className="lecture-when">
+        <p className="muted">{formatLectureWhen(lecture, timeFormat)}</p>
+        {!editingDetails && (
+          <button type="button" className="secondary" onClick={openDetailsEditor}>
+            {lecture.scheduled_at ? "Edit details" : "Add date & details"}
+          </button>
+        )}
+      </div>
+
+      {editingDetails && (
+        <div className="card">
+          <h2>Lecture details</h2>
+          <p className="muted" style={{ marginBottom: "0.4rem" }}>
+            All optional. No date keeps it off your calendars; a date with no time shows as
+            all-day.
+          </p>
+          <form className="inline" onSubmit={handleSaveDetails}>
+            <label>
+              Date
+              <input
+                type="date"
+                value={detailsDraft.date}
+                onChange={(e) => setDetailsDraft((d) => ({ ...d, date: e.target.value }))}
+              />
+            </label>
+            <label>
+              Time
+              <input
+                type="time"
+                value={detailsDraft.time}
+                onChange={(e) => setDetailsDraft((d) => ({ ...d, time: e.target.value }))}
+                disabled={!detailsDraft.date}
+                title={detailsDraft.date ? undefined : "Pick a date first"}
+              />
+            </label>
+            <label>
+              Week
+              <input
+                type="number"
+                min={0}
+                max={99}
+                value={detailsDraft.week}
+                onChange={(e) => setDetailsDraft((d) => ({ ...d, week: e.target.value }))}
+                placeholder="—"
+                style={{ width: "5rem" }}
+              />
+            </label>
+            <label style={{ flex: 1, minWidth: "12rem" }}>
+              Topics
+              <input
+                value={detailsDraft.topics}
+                onChange={(e) => setDetailsDraft((d) => ({ ...d, topics: e.target.value }))}
+                placeholder="Review session: recursion and induction"
+              />
+            </label>
+            <button type="submit" disabled={savingDetails}>
+              {savingDetails ? "Saving…" : "Save details"}
+            </button>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => setEditingDetails(false)}
+              disabled={savingDetails}
+            >
+              Cancel
+            </button>
+          </form>
+        </div>
+      )}
 
       <div className="card">
         <h2>{lecture.source === "manual" ? "Topics" : "Syllabus topics"}</h2>
         <p>
           {lecture.topics ??
             (lecture.source === "manual"
-              ? "No topics entered for this session."
+              ? "No topics entered yet — add them with Edit details."
               : "No topic description extracted for this session.")}
         </p>
       </div>

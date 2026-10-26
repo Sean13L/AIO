@@ -25,7 +25,7 @@ export async function GET(
       orderBy: { due_at: "asc" },
     }),
     prisma.lectures.findMany({
-      where: { courses: { user_id: feed.user_id } },
+      where: { courses: { user_id: feed.user_id }, scheduled_at: { not: null } },
       include: { courses: { select: { course_code: true } } },
       orderBy: { scheduled_at: "asc" },
     }),

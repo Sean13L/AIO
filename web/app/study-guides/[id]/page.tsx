@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuthGate } from "@/lib/useAuthGate";
 import { api } from "@/lib/api";
 import type { StudyGuideDetail } from "@/lib/types";
-import { formatDue } from "@/lib/dates";
+import { formatLectureWhen } from "@/lib/dates";
 import { useTimeFormatPreference } from "@/lib/timeFormat";
 import { FlashcardViewer } from "@/components/FlashcardViewer";
 import { QuizViewer } from "@/components/QuizViewer";
@@ -231,7 +231,7 @@ export default function StudyGuideDetailPage({ params }: { params: Promise<{ id:
                   {source.course_code}
                 </Link>
                 {source.week_number ? ` — Week ${source.week_number}` : ""} —{" "}
-                {formatDue({ due_at: source.scheduled_at, is_datetime: true }, timeFormat)}
+                {formatLectureWhen(source, timeFormat)}
                 {included.length > 0 && (
                   <span className="muted"> ({included.join(", ")})</span>
                 )}

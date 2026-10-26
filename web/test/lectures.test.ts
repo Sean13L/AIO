@@ -302,11 +302,11 @@ describe.skipIf(!hasDb)("Lectures API routes (requires DATABASE_URL)", () => {
     const jsonReq = (method: string, body: unknown) =>
       new NextRequest("http://localhost/x", { method, body: JSON.stringify(body) });
 
-    // Lectures are always timed, so a missing time is rejected.
-    const noTime = await createLecture(jsonReq("POST", { scheduled_date: "2026-10-05" }), {
+    // A time with no date is the one combination that's rejected.
+    const timeOnly = await createLecture(jsonReq("POST", { scheduled_time: "14:30" }), {
       params: Promise.resolve({ id: course.id }),
     });
-    expect(noTime.status).toBe(400);
+    expect(timeOnly.status).toBe(400);
 
     const created = await createLecture(
       jsonReq("POST", {
@@ -385,4 +385,50 @@ describe.skipIf(!hasDb)("Lectures API routes (requires DATABASE_URL)", () => {
     await prisma.user.delete({ where: { id: other.id } });
     await prisma.courses.delete({ where: { id: course.id } });
   }, 20000);
+
+  it("adds a lecture with no fields at all, then dates it later (all-day, timed, cleared)", async () => {
+    const course = await prisma.courses.create({
+      data: { user_id: mockSession.userId, course_code: "LATE101", course_name: "Schedule Later" },
+    });
+    const { POST: createLecture } = await import("@/app/api/courses/[id]/lectures/route");
+    const { PATCH } = await import("@/app/api/lectures/[id]/route");
+    const jsonReq = (method: string, body: unknown) =>
+      new NextRequest("http://localhost/x", { method, body: JSON.stringify(body) });
+    const patch = (id: string, body: unknown) =>
+      PATCH(jsonReq("PATCH", body), { params: Promise.resolve({ id }) });
+
+    const created = await createLecture(jsonReq("POST", {}), {
+      params: Promise.resolve({ id: course.id }),
+    });
+    expect(created.status).toBe(201);
+    const lecture = await created.json();
+    expect(lecture).toMatchObject({ scheduled_at: null, week_number: null, topics: null, source: "manual" });
+
+    // Date only → all-day.
+    const dated = await (await patch(lecture.id, { scheduled_date: "2026-11-03" })).json();
+    expect(dated).toMatchObject({ scheduled_at: "2026-11-03T00:00:00.000Z", is_datetime: false });
+
+    // Date + time → timed, along with the other details.
+    const timed = await (
+      await patch(lecture.id, {
+        scheduled_date: "2026-11-03",
+        scheduled_time: "09:30",
+        week_number: 9,
+        topics: "Exam review",
+      })
+    ).json();
+    expect(timed).toMatchObject({
+      scheduled_at: "2026-11-03T09:30:00.000Z",
+      is_datetime: true,
+      week_number: 9,
+      topics: "Exam review",
+    });
+
+    // A time on its own (no date in the request) is rejected.
+    expect((await patch(lecture.id, { scheduled_time: "10:00" })).status).toBe(400);
+
+    // Clearing the date unschedules it again.
+    const cleared = await (await patch(lecture.id, { scheduled_date: null })).json();
+    expect(cleared.scheduled_at).toBeNull();
+  });
 });

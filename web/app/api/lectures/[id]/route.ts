@@ -3,7 +3,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/session";
 import { lectureUpdateSchema } from "@/lib/validation";
-import { toTimestamp } from "@/lib/timestamp";
+import { lectureSchedule } from "@/lib/timestamp";
 import { deleteFile, filenameFromFileUrl } from "@/lib/storage";
 import { deleteRecordEventFromGoogle, syncUserCalendarToGoogle } from "@/lib/calendar/googleCalendar";
 
@@ -52,9 +52,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (notes !== undefined) data.notes = notes?.trim() ? notes : null;
   if (topics !== undefined) data.topics = topics?.trim() || null;
   if (week_number !== undefined) data.week_number = week_number;
-  if (scheduled_date !== undefined && scheduled_time !== undefined) {
-    data.scheduled_at = toTimestamp(scheduled_date, scheduled_time);
-  }
+  if (scheduled_date !== undefined) Object.assign(data, lectureSchedule(scheduled_date, scheduled_time));
 
   const updated = await prisma.lectures.update({ where: { id }, data });
 
@@ -62,6 +60,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   // transcript edits (the autosave path, every 20s while recording) don't.
   if (topics !== undefined || week_number !== undefined || scheduled_date !== undefined) {
     await syncUserCalendarToGoogle(userId);
+  }
+  // The sync only adds/updates events, so a lecture that just lost its date
+  // needs its Google Calendar event removed explicitly.
+  if (lecture.scheduled_at && !updated.scheduled_at) {
+    await deleteRecordEventFromGoogle(userId, id);
   }
   return NextResponse.json(updated);
 }

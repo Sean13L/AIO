@@ -79,6 +79,8 @@ export default function CalendarPage() {
       map.get(key)!.items.push(item);
     }
     for (const lecture of lectures ?? []) {
+      // Undated lectures have no day to sit on.
+      if (!lecture.scheduled_at) continue;
       const key = ymdUTC(lecture.scheduled_at);
       if (!map.has(key)) map.set(key, { items: [], lectures: [], todos: [] });
       map.get(key)!.lectures.push(lecture);
@@ -190,7 +192,8 @@ export default function CalendarPage() {
                     className="calendar-event calendar-event-lecture"
                     title="Lecture"
                   >
-                    {hmUTC(lecture.scheduled_at, timeFormat)} {lecture.course_code}: Lecture
+                    {lecture.is_datetime ? `${hmUTC(lecture.scheduled_at!, timeFormat)} ` : ""}
+                    {lecture.course_code}: Lecture
                   </Link>
                 ))}
                 {dayEvents?.todos.map((todo) => (

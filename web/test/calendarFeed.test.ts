@@ -58,6 +58,19 @@ describe.skipIf(!hasDb)("Calendar feed API routes (requires DATABASE_URL)", () =
         topics: "Introduction",
       },
     });
+    // Undated lectures stay off the feed; date-only ones are all-day.
+    await prisma.lectures.create({
+      data: { course_id: course.id, scheduled_at: null, topics: "Undated session", source: "manual" },
+    });
+    await prisma.lectures.create({
+      data: {
+        course_id: course.id,
+        scheduled_at: new Date("2026-11-02T00:00:00Z"),
+        is_datetime: false,
+        week_number: 8,
+        source: "manual",
+      },
+    });
     // Opted-in todo (should appear) alongside one that isn't (should not).
     await prisma.todos.create({
       data: {
@@ -105,6 +118,9 @@ describe.skipIf(!hasDb)("Calendar feed API routes (requires DATABASE_URL)", () =
     expect(body.replace(/\r\n /g, "")).toContain(
       `URL:http://localhost:3000/courses/${course.id}/lectures/${lecture.id}`
     );
+    expect(body).toContain("SUMMARY:CS135: Lecture (Week 8)");
+    expect(body).toContain("DTSTART;VALUE=DATE:20261102");
+    expect(body).not.toContain("Undated session");
     // Only the todo with show_on_calendar: true is included.
     expect(body).toContain("SUMMARY:Submit essay");
     expect(body).toContain("DTSTART;VALUE=DATE:20261025");

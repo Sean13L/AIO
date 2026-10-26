@@ -119,8 +119,8 @@ export const api = {
   createLecture: (
     courseId: string,
     input: {
-      scheduled_date: string;
-      scheduled_time: string;
+      scheduled_date?: string | null;
+      scheduled_time?: string | null;
       week_number?: number | null;
       topics?: string | null;
       notes?: string | null;
@@ -128,6 +128,22 @@ export const api = {
   ) =>
     request<Lecture>(`/api/courses/${courseId}/lectures`, {
       method: "POST",
+      body: JSON.stringify(input),
+    }),
+
+  // Schedule and details, editable after creation. scheduled_date null
+  // unschedules the lecture; scheduled_time null makes it all-day.
+  updateLectureDetails: (
+    lectureId: string,
+    input: {
+      scheduled_date: string | null;
+      scheduled_time: string | null;
+      week_number: number | null;
+      topics: string | null;
+    }
+  ) =>
+    request<Lecture>(`/api/lectures/${lectureId}`, {
+      method: "PATCH",
       body: JSON.stringify(input),
     }),
 
